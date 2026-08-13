@@ -204,8 +204,8 @@
         function populateBrands() {
             const brands = [...new Set(products.map(p => p.brand))].sort();
             const brandSelect = document.getElementById('brandSelect');
-            brandSelect.innerHTML = '<option value="ALL">ALL BRANDS ( Show Long List )</option>' + 
-                brands.map(b => `<option value="${b}">${b}</option>`).join('');
+            brandSelect.innerHTML = '<option value="ALL">ALL BRANDS</option>' + 
+            brands.map(b => `<option value="${b}">${b}</option>`).join('');
         }
 
         function renderTable(items) {
