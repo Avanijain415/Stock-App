@@ -8,6 +8,42 @@ app = Flask(__name__)
 app.secret_key = 'stock-secret-key-change-this'
 DB_FILE = 'inventory.db'
 
+def auto_migrate_excel():
+    excel_file = 'NEW APRIL STOCK SHEET 2026.xlsx'
+    
+    if not os.path.exists(excel_file):
+        files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
+        if files:
+            excel_file = files[0]
+        else:
+            return
+
+    try:
+        import pandas as pd
+        xls = pd.ExcelFile(excel_file)
+        sheet = 'Sheet2' if 'Sheet2' in xls.sheet_names else xls.sheet_names[0]
+        
+        df = pd.read_excel(excel_file, sheet_name=sheet, skiprows=1)
+        df = df.iloc[:, :8]
+        df.columns = ['brand', 'description', 'rtt', 'rin', 'rit', 'ge', 'total', 'actual_stock']
+        
+        df['brand'] = df['brand'].ffill()
+        df = df.dropna(subset=['description'])
+        
+        num_cols = ['rtt', 'rin', 'rit', 'ge', 'total', 'actual_stock']
+        for col in num_cols:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM products")
+        conn.commit()
+        
+        df.to_sql('products', conn, if_exists='append', index=False)
+        conn.close()
+    except Exception as e:
+        print(f"Migration error: {e}")
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -57,6 +93,7 @@ def init_db():
         
     conn.commit()
     conn.close()
+    auto_migrate_excel()
 
 def login_required(f):
     @wraps(f)
@@ -80,6 +117,9 @@ def log_action(username, action, details):
     cursor.execute("INSERT INTO audit_logs (username, action, details) VALUES (?, ?, ?)", (username, action, details))
     conn.commit()
     conn.close()
+
+with app.app_context():
+    init_db()
 
 @app.route('/')
 def home():
@@ -172,9 +212,6 @@ def get_activity():
     logs = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'logs': logs})
-
-with app.app_context():
-    init_db()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
