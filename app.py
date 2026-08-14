@@ -84,7 +84,7 @@ def migrate_from_excel():
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     sheet = wb['Sheet1'] if 'Sheet1' in wb.sheetnames else wb.active
     
-    # In Sheet1, Headers are in Row 2, actual products start from Row 3
+    # Headers Row 2 par hain, actual products Row 3 se shuru hain
     for row in range(3, sheet.max_row + 1):
         desc = sheet.cell(row=row, column=5).value
         if not desc or str(desc).strip().lower() in ['discription', 'description', 'none', '']:
@@ -122,7 +122,7 @@ def migrate_from_excel():
         ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
         prod_id = cursor.lastrowid
         
-        # Parse legacy date columns from Col 18 to 60
+        # Legacy Date entries ko history/activity log me import karna
         for col in range(18, min(sheet.max_column + 1, 60)):
             val = sheet.cell(row=row, column=col).value
             col_hdr = sheet.cell(row=2, column=col).value
@@ -140,6 +140,13 @@ def migrate_from_excel():
 
     conn.commit()
     conn.close()
+
+# AUTO-RESET: Purana DB delete karke fresh data import karega
+if os.path.exists(DB_NAME):
+    try:
+        os.remove(DB_NAME)
+    except Exception as e:
+        print("DB remove note:", e)
 
 init_db()
 migrate_from_excel()
