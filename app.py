@@ -1,82 +1,25 @@
 import os
-import csv
 import sqlite3
-from io import StringIO
-from functools import wraps
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify, session, Response
-from werkzeug.security import generate_password_hash, check_password_hash
+import openpyxl
 
 app = Flask(__name__)
-app.secret_key = 'stock-secret-key-change-this'
-DB_FILE = 'inventory.db'
+app.secret_key = 'super_secret_enterprise_key_2026'
 
-def auto_import_excel():
-    excel_file = 'NEW APRIL STOCK SHEET 2026.xlsx'
-    if not os.path.exists(excel_file):
-        files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
-        if files:
-            excel_file = files[0]
-        else:
-            return
+DB_NAME = 'stock.db'
+EXCEL_FILE = 'NEW APRIL STOCK SHEET 2026.xlsx'
 
-    try:
-        import openpyxl
-        wb = openpyxl.load_workbook(excel_file, data_only=True)
-        sheet_name = 'Sheet2' if 'Sheet2' in wb.sheetnames else wb.sheetnames[0]
-        sheet = wb[sheet_name]
-
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        
-        # Reset products table to reload fresh excel data
-        cursor.execute("DELETE FROM products")
-        
-        last_brand = ""
-        row_count = 0
-        
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            if not row or len(row) < 2:
-                continue
-            
-            raw_brand = str(row[0]).strip() if row[0] is not None and str(row[0]).strip() != 'None' else ""
-            description = str(row[1]).strip() if row[1] is not None and str(row[1]).strip() != 'None' else ""
-            
-            if raw_brand and raw_brand != 'BRAND NAME':
-                last_brand = raw_brand
-            brand = last_brand
-            
-            if not description or description in ['DISCRIPTION', 'DESCRIPTION']:
-                continue
-                
-            def clean_int(val):
-                try:
-                    return int(float(val))
-                except:
-                    return 0
-
-            rtt = clean_int(row[2]) if len(row) > 2 else 0
-            rin = clean_int(row[3]) if len(row) > 3 else 0
-            rit = clean_int(row[4]) if len(row) > 4 else 0
-            ge = clean_int(row[5]) if len(row) > 5 else 0
-            total = clean_int(row[6]) if len(row) > 6 else (rtt + rin + rit + ge)
-            actual_stock = clean_int(row[7]) if len(row) > 7 else 0
-
-            cursor.execute("""
-                INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
-            row_count += 1
-
-        conn.commit()
-        conn.close()
-        print(f"Successfully loaded {row_count} items from Excel!")
-    except Exception as e:
-        print(f"Error during excel import: {e}")
+def get_db():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db()
     cursor = conn.cursor()
     
+    # 1. Users Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,74 +29,127 @@ def init_db():
         )
     ''')
     
+    # 2. Comprehensive Products Table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            brand TEXT NOT NULL,
+            hsn_code TEXT,
+            country TEXT,
+            brand TEXT,
             description TEXT NOT NULL,
-            rtt INTEGER DEFAULT 0,
-            rin INTEGER DEFAULT 0,
-            rit INTEGER DEFAULT 0,
-            ge INTEGER DEFAULT 0,
-            total INTEGER DEFAULT 0,
-            actual_stock INTEGER DEFAULT 0
+            price REAL DEFAULT 0,
+            tax REAL DEFAULT 0,
+            price_after_tax REAL DEFAULT 0,
+            mrp REAL DEFAULT 0,
+            per_petti INTEGER DEFAULT 0,
+            expiry_date TEXT,
+            opening_stock INTEGER DEFAULT 0,
+            actual_stock INTEGER DEFAULT 0,
+            damage INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'Completed'
         )
     ''')
     
+    # 3. Item Ledger & Activity Log Table
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS audit_logs (
+        CREATE TABLE IF NOT EXISTS activity_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            username TEXT NOT NULL,
-            action TEXT NOT NULL,
-            details TEXT NOT NULL
+            product_id INTEGER,
+            product_desc TEXT,
+            username TEXT,
+            action TEXT,
+            quantity INTEGER,
+            prev_stock INTEGER,
+            new_stock INTEGER,
+            details TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
-        default_users = [
-            ('master', generate_password_hash('master123'), 'master'),
-            ('worker1', generate_password_hash('worker123'), 'worker'),
-            ('worker2', generate_password_hash('worker123'), 'worker'),
-            ('worker3', generate_password_hash('worker123'), 'worker')
-        ]
-        cursor.executemany("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", default_users)
-        
-    conn.commit()
-
-    cursor.execute("SELECT COUNT(*) FROM products")
-    count = cursor.fetchone()[0]
-    conn.close()
+    # Default Users
+    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('master', 'admin123', 'master')")
+    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('worker1', 'worker123', 'worker')")
     
-    if count == 0:
-        auto_import_excel()
-
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if 'username' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
-        return f(*args, **kwargs)
-    return decorated
-
-def master_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if session.get('role') != 'master':
-            return jsonify({'error': 'Master access required'}), 403
-        return f(*args, **kwargs)
-    return decorated
-
-def log_action(username, action, details):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO audit_logs (username, action, details) VALUES (?, ?, ?)", (username, action, details))
     conn.commit()
     conn.close()
 
-with app.app_context():
-    init_db()
+def migrate_from_excel():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM products")
+    if cursor.fetchone()[0] > 0:
+        conn.close()
+        return
+
+    if not os.path.exists(EXCEL_FILE):
+        conn.close()
+        return
+
+    wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
+    
+    # Read Sheet1 (Master detailed sheet)
+    sheet = wb['Sheet1'] if 'Sheet1' in wb.sheetnames else wb.active
+    
+    # Sheet1 Headers are in row 1
+    # Row 2 onwards are products
+    for row in range(2, sheet.max_row + 1):
+        desc = sheet.cell(row=row, column=5).value  # Column E: DISCRIPTION
+        if not desc:
+            continue
+            
+        hsn = str(sheet.cell(row=row, column=2).value or '')
+        country = str(sheet.cell(row=row, column=3).value or 'INDIA')
+        brand = str(sheet.cell(row=row, column=4).value or 'GENERAL')
+        
+        try: price = float(sheet.cell(row=row, column=6).value or 0)
+        except: price = 0.0
+        try: tax = float(sheet.cell(row=row, column=7).value or 0)
+        except: tax = 0.0
+        try: price_after_tax = float(sheet.cell(row=row, column=8).value or 0)
+        except: price_after_tax = 0.0
+        try: mrp = float(sheet.cell(row=row, column=9).value or 0)
+        except: mrp = 0.0
+        try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
+        except: per_petti = 0
+        
+        expiry = str(sheet.cell(row=row, column=11).value or '')
+        
+        try: opening = int(sheet.cell(row=row, column=14).value or 0)
+        except: opening = 0
+        try: actual = int(sheet.cell(row=row, column=15).value or opening)
+        except: actual = opening
+        try: damage = int(sheet.cell(row=row, column=17).value or 0)
+        except: damage = 0
+
+        cursor.execute('''
+            INSERT INTO products (hsn_code, country, brand, description, price, tax, price_after_tax, mrp, per_petti, expiry_date, opening_stock, actual_stock, damage, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, 'Completed'))
+        prod_id = cursor.lastrowid
+        
+        # Parse Date-wise history columns from Sheet1 (Col 18 onwards)
+        for col in range(18, min(sheet.max_column + 1, 80)):
+            val = sheet.cell(row=row, column=col).value
+            col_hdr = sheet.cell(row=1, column=col).value
+            if val is not None and str(val).strip() != '':
+                try:
+                    qty = int(val)
+                    action = "RECEIVE" if qty > 0 else "ISSUE"
+                    date_str = str(col_hdr)[:10] if col_hdr else "Legacy Entry"
+                    cursor.execute('''
+                        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (prod_id, str(desc).strip(), 'system_excel', action, abs(qty), opening, actual, f"Excel entry on {date_str}", datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                except:
+                    pass
+
+    conn.commit()
+    conn.close()
+
+init_db()
+migrate_from_excel()
+
+# ----------------- ROUTES & APIS -----------------
 
 @app.route('/')
 def home():
@@ -164,145 +160,98 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
-    
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT password, role FROM users WHERE username = ?", (username,))
-    user = cursor.fetchone()
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password)).fetchone()
     conn.close()
-    
-    if user and check_password_hash(user[0], password):
-        session['username'] = username
-        session['role'] = user[1]
-        log_action(username, 'LOGIN', 'Logged into dashboard')
-        return jsonify({'status': 'success', 'username': username, 'role': user[1]})
-    
-    return jsonify({'error': 'Invalid credentials'}), 400
+    if user:
+        session['username'] = user['username']
+        session['role'] = user['role']
+        return jsonify({"status": "success", "username": user['username'], "role": user['role']})
+    return jsonify({"status": "error", "message": "Invalid username or password"}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    if 'username' in session:
-        log_action(session['username'], 'LOGOUT', 'Logged out of app')
     session.clear()
-    return jsonify({'status': 'success'})
+    return jsonify({"status": "success"})
 
 @app.route('/api/products', methods=['GET'])
-@login_required
 def get_products():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM products ORDER BY brand, description")
-    products = [dict(row) for row in cursor.fetchall()]
+    conn = get_db()
+    products = conn.execute("SELECT * FROM products ORDER BY id ASC").fetchall()
     conn.close()
-    return jsonify({'products': products, 'user_role': session.get('role')})
-
-@app.route('/api/products/add', methods=['POST'])
-@login_required
-def add_product():
-    data = request.json
-    brand = data.get('brand', '').upper().strip()
-    description = data.get('description', '').strip()
-    actual_stock = int(data.get('actual_stock', 0))
-    rtt = int(data.get('rtt', 0))
-    rin = int(data.get('rin', 0))
-    rit = int(data.get('rit', 0))
-    ge = int(data.get('ge', 0))
-    total = rtt + rin + rit + ge
-
-    if not brand or not description:
-        return jsonify({'error': 'Brand and Description are required'}), 400
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
-    conn.commit()
-    conn.close()
-    
-    log_action(session['username'], 'ADD_PRODUCT', f"Added product '{description}' under brand '{brand}' with stock {actual_stock}")
-    return jsonify({'status': 'success'})
+    return jsonify([dict(p) for p in products])
 
 @app.route('/api/products/adjust', methods=['POST'])
-@login_required
 def adjust_stock():
+    if 'username' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
     data = request.json
-    prod_id = data.get('product_id')
-    amount = int(data.get('amount', 0))
-    action_type = data.get('type')
+    prod_id = data.get('id')
+    change = int(data.get('change', 0))
+    action_type = "RECEIVE" if change > 0 else "ISSUE"
     
-    conn = sqlite3.connect(DB_FILE)
+    conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT brand, description, actual_stock FROM products WHERE id = ?", (prod_id,))
-    prod = cursor.fetchone()
-    
+    prod = cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
     if not prod:
         conn.close()
-        return jsonify({'error': 'Product not found'}), 404
-        
-    current_stock = prod[2]
-    new_stock = current_stock - amount if action_type == 'issue' else current_stock + amount
+        return jsonify({"status": "error", "message": "Product not found"}), 404
+    
+    prev_stock = prod['actual_stock']
+    new_stock = prev_stock + change
     if new_stock < 0:
-        conn.close()
-        return jsonify({'error': 'Stock cannot be negative'}), 400
-        
-    cursor.execute("UPDATE products SET actual_stock = ? WHERE id = ?", (new_stock, prod_id))
+        new_stock = 0
+    
+    # Task progress status update
+    status = "Pending" if new_stock <= 5 else "Completed"
+    
+    cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (new_stock, status, prod_id))
+    cursor.execute('''
+        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (prod_id, prod['description'], session['username'], action_type, abs(change), prev_stock, new_stock, f"{session['username']} {action_type}D {abs(change)} units"))
+    
     conn.commit()
     conn.close()
-    
-    log_action(session['username'], action_type.upper(), f"{action_type.capitalize()}d {amount} units of {prod[0]} - {prod[1]} (New Stock: {new_stock})")
-    return jsonify({'status': 'success', 'new_stock': new_stock})
+    return jsonify({"status": "success", "new_stock": new_stock, "product_status": status})
 
-@app.route('/api/products/delete/<int:prod_id>', methods=['DELETE'])
-@master_required
-def delete_product(prod_id):
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT brand, description FROM products WHERE id = ?", (prod_id,))
-    prod = cursor.fetchone()
-    if prod:
-        cursor.execute("DELETE FROM products WHERE id = ?", (prod_id,))
-        conn.commit()
-        log_action(session['username'], 'DELETE', f"Deleted product '{prod[1]}' under brand '{prod[0]}'")
+@app.route('/api/products/<int:prod_id>/ledger', methods=['GET'])
+def get_product_ledger(prod_id):
+    conn = get_db()
+    product = conn.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
+    if not product:
+        conn.close()
+        return jsonify({"status": "error", "message": "Not found"}), 404
+        
+    logs = conn.execute("SELECT * FROM activity_log WHERE product_id = ? ORDER BY id DESC", (prod_id,)).fetchall()
     conn.close()
-    return jsonify({'status': 'success'})
+    return jsonify({
+        "product": dict(product),
+        "ledger": [dict(log) for log in logs]
+    })
 
-@app.route('/api/activity', methods=['GET'])
-@master_required
-def get_activity():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 40")
-    logs = [dict(row) for row in cursor.fetchall()]
+@app.route('/api/activity_logs', methods=['GET'])
+def get_activity_logs():
+    conn = get_db()
+    logs = conn.execute("SELECT * FROM activity_log ORDER BY id DESC LIMIT 50").fetchall()
     conn.close()
-    return jsonify({'logs': logs})
+    return jsonify([dict(l) for l in logs])
 
-@app.route('/api/export/csv', methods=['GET'])
-@master_required
+@app.route('/api/export/csv')
 def export_csv():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("SELECT brand, description, rtt, rin, rit, ge, total, actual_stock FROM products ORDER BY brand, description")
-    rows = cursor.fetchall()
+    if session.get('role') != 'master':
+        return jsonify({"status": "error", "message": "Forbidden"}), 403
+    conn = get_db()
+    products = conn.execute("SELECT * FROM products").fetchall()
     conn.close()
-
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['BRAND', 'DESCRIPTION', 'RTT', 'RIN', 'RIT', 'GE', 'TOTAL', 'ACTUAL STOCK'])
-    cw.writerows(rows)
-
-    output = Response(si.getvalue(), mimetype='text/csv')
-    output.headers["Content-Disposition"] = "attachment; filename=Stock_Report.csv"
-    return output
-
-@app.route('/api/admin/reload', methods=['GET'])
-@master_required
-def force_reload():
-    auto_import_excel()
-    return jsonify({'status': 'Excel data reloaded successfully!'})
+    
+    def generate():
+        yield "ID,HSN Code,Country,Brand,Description,Price,Tax,Price After Tax,MRP,Per Petti,Actual Stock,Status\n"
+        for p in products:
+            yield f'"{p["id"]}","{p["hsn_code"]}","{p["country"]}","{p["brand"]}","{p["description"]}","{p["price"]}","{p["tax"]}","{p["price_after_tax"]}","{p["mrp"]}","{p["per_petti"]}","{p["actual_stock"]}","{p["status"]}"\n'
+            
+    return Response(generate(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=master_inventory_report.csv"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True, port=5000)
