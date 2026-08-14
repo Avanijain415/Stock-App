@@ -19,6 +19,7 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
+    # Users
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +29,7 @@ def init_db():
         )
     ''')
     
+    # Physical Warehouse Products (Sheet1)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +50,27 @@ def init_db():
         )
     ''')
     
+    # Global Marketplace Pricing & Margins (GTUS, GTAU, CANADA, UAE, INDIA, etc.)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS marketplace_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            marketplace TEXT NOT NULL,
+            marketplace_label TEXT NOT NULL,
+            sku TEXT,
+            asin TEXT,
+            selling_price REAL DEFAULT 0,
+            fba_fee REAL DEFAULT 0,
+            purchase_price REAL DEFAULT 0,
+            conv_rate REAL DEFAULT 0,
+            purchase_rate REAL DEFAULT 0,
+            freight REAL DEFAULT 0,
+            min_selling_rate REAL DEFAULT 0,
+            margin REAL DEFAULT 0,
+            product_link TEXT
+        )
+    ''')
+    
+    # Activity & Audit Ledger
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS activity_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,86 +95,148 @@ def init_db():
 def migrate_from_excel():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM products")
-    if cursor.fetchone()[0] > 0:
-        conn.close()
-        return
-
+    
     if not os.path.exists(EXCEL_FILE):
         conn.close()
         return
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
-    sheet = wb['Sheet1'] if 'Sheet1' in wb.sheetnames else wb.active
     
-    # Headers Row 2 par hain, actual products Row 3 se shuru hain
-    for row in range(3, sheet.max_row + 1):
-        desc = sheet.cell(row=row, column=5).value
-        if not desc or str(desc).strip().lower() in ['discription', 'description', 'none', '']:
-            continue
+    # 1. Migrate Warehouse Products (Sheet1)
+    cursor.execute("SELECT COUNT(*) FROM products")
+    if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
+        sheet = wb['Sheet1']
+        for row in range(3, sheet.max_row + 1):
+            desc = sheet.cell(row=row, column=5).value
+            if not desc or str(desc).strip().lower() in ['discription', 'description', 'none', '']:
+                continue
+                
+            hsn = str(sheet.cell(row=row, column=2).value or '').replace('.0', '')
+            country = str(sheet.cell(row=row, column=3).value or 'INDIA')
+            brand = str(sheet.cell(row=row, column=4).value or 'GENERAL')
             
-        hsn = str(sheet.cell(row=row, column=2).value or '').replace('.0', '')
-        country = str(sheet.cell(row=row, column=3).value or 'INDIA')
-        brand = str(sheet.cell(row=row, column=4).value or 'GENERAL')
-        
-        try: price = float(sheet.cell(row=row, column=6).value or 0)
-        except: price = 0.0
-        try: tax = float(sheet.cell(row=row, column=7).value or 0)
-        except: tax = 0.0
-        try: price_after_tax = float(sheet.cell(row=row, column=8).value or 0)
-        except: price_after_tax = 0.0
-        try: mrp = float(sheet.cell(row=row, column=9).value or 0)
-        except: mrp = 0.0
-        try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
-        except: per_petti = 0
-        
-        expiry = str(sheet.cell(row=row, column=11).value or '')
-        
-        try: opening = int(float(sheet.cell(row=row, column=14).value or 0))
-        except: opening = 0
-        try: actual = int(float(sheet.cell(row=row, column=15).value or opening))
-        except: actual = opening
-        try: damage = int(float(sheet.cell(row=row, column=17).value or 0))
-        except: damage = 0
+            try: price = float(sheet.cell(row=row, column=6).value or 0)
+            except: price = 0.0
+            try: tax = float(sheet.cell(row=row, column=7).value or 0)
+            except: tax = 0.0
+            try: price_after_tax = float(sheet.cell(row=row, column=8).value or 0)
+            except: price_after_tax = 0.0
+            try: mrp = float(sheet.cell(row=row, column=9).value or 0)
+            except: mrp = 0.0
+            try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
+            except: per_petti = 0
+            
+            expiry = str(sheet.cell(row=row, column=11).value or '')
+            try: opening = int(float(sheet.cell(row=row, column=14).value or 0))
+            except: opening = 0
+            try: actual = int(float(sheet.cell(row=row, column=15).value or opening))
+            except: actual = opening
+            try: damage = int(float(sheet.cell(row=row, column=17).value or 0))
+            except: damage = 0
 
-        status = "Pending" if actual <= 5 else "Completed"
+            status = "Pending" if actual <= 5 else "Completed"
 
-        cursor.execute('''
-            INSERT INTO products (hsn_code, country, brand, description, price, tax, price_after_tax, mrp, per_petti, expiry_date, opening_stock, actual_stock, damage, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
-        prod_id = cursor.lastrowid
+            cursor.execute('''
+                INSERT INTO products (hsn_code, country, brand, description, price, tax, price_after_tax, mrp, per_petti, expiry_date, opening_stock, actual_stock, damage, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
+            prod_id = cursor.lastrowid
+            
+            for col in range(18, min(sheet.max_column + 1, 50)):
+                val = sheet.cell(row=row, column=col).value
+                col_hdr = sheet.cell(row=2, column=col).value
+                if val is not None and str(val).strip() not in ['', 'None', 'nan']:
+                    try:
+                        qty = int(float(val))
+                        action = "RECEIVE" if qty > 0 else "ISSUE"
+                        date_str = str(col_hdr)[:10] if col_hdr else "Excel Import"
+                        cursor.execute('''
+                            INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (prod_id, str(desc).strip(), 'system_excel', action, abs(qty), opening, actual, f"Entry for {date_str}", datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+                    except:
+                        pass
+
+    # 2. Migrate All Global Country Marketplace Sheets
+    cursor.execute("SELECT COUNT(*) FROM marketplace_products")
+    if cursor.fetchone()[0] == 0:
+        marketplaces = [
+            ('GTUS', 'USA 🇺🇸 (GTUS)'),
+            ('CANADA', 'Canada 🇨🇦'),
+            ('GTAU', 'Australia 🇦🇺 (GTAU)'),
+            ('UAE', 'UAE 🇦🇪'),
+            ('INDIA', 'India 🇮🇳'),
+            ('VAIS NEW', 'USA 🇺🇸 (VAIS)'),
+            ('RTAU', 'Australia 🇦🇺 (RTAU)')
+        ]
         
-        # Legacy Date entries ko history/activity log me import karna
-        for col in range(18, min(sheet.max_column + 1, 60)):
-            val = sheet.cell(row=row, column=col).value
-            col_hdr = sheet.cell(row=2, column=col).value
-            if val is not None and str(val).strip() not in ['', 'None', 'nan']:
-                try:
-                    qty = int(float(val))
-                    action = "RECEIVE" if qty > 0 else "ISSUE"
-                    date_str = str(col_hdr)[:10] if col_hdr else "Excel Import"
-                    cursor.execute('''
-                        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (prod_id, str(desc).strip(), 'system_excel', action, abs(qty), opening, actual, f"Entry for {date_str}", datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-                except:
-                    pass
+        for m_sheet, m_label in marketplaces:
+            if m_sheet not in wb.sheetnames:
+                continue
+            ws = wb[m_sheet]
+            
+            # Find header row
+            header_row = None
+            for r in range(1, 10):
+                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 10)]
+                if any('SKU' in v for v in row_vals):
+                    header_row = r
+                    break
+            
+            if not header_row:
+                continue
+                
+            for r in range(header_row + 1, ws.max_row + 1):
+                sku = ws.cell(row=r, column=2).value
+                if not sku or str(sku).strip().lower() in ['none', '', 'sku', 'seller-sku']:
+                    continue
+                
+                asin = str(ws.cell(row=r, column=3).value or '')
+                try: price = float(ws.cell(row=r, column=4).value or 0)
+                except: price = 0.0
+                try: fba = float(ws.cell(row=r, column=5).value or 0)
+                except: fba = 0.0
+                try: purchase_price = float(ws.cell(row=r, column=6).value or 0)
+                except: purchase_price = 0.0
+                try: conv_rate = float(ws.cell(row=r, column=7).value or 0)
+                except: conv_rate = 0.0
+                try: purchase_rate = float(ws.cell(row=r, column=8).value or 0)
+                except: purchase_rate = 0.0
+                try: freight = float(ws.cell(row=r, column=9).value or 0)
+                except: freight = 0.0
+                try: min_selling = float(ws.cell(row=r, column=10).value or 0)
+                except: min_selling = 0.0
+                try: margin = float(ws.cell(row=r, column=11).value or 0)
+                except: margin = 0.0
+                
+                # Check for link in col 12, 13, 14
+                link = ""
+                for l_col in [12, 13, 14]:
+                    l_val = str(ws.cell(row=r, column=l_col).value or '').strip()
+                    if l_val.startswith('http'):
+                        link = l_val
+                        break
+                
+                cursor.execute('''
+                    INSERT INTO marketplace_products 
+                    (marketplace, marketplace_label, sku, asin, selling_price, fba_fee, purchase_price, conv_rate, purchase_rate, freight, min_selling_rate, margin, product_link)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (m_sheet, m_label, str(sku).strip(), asin, price, fba, purchase_price, conv_rate, purchase_rate, freight, min_selling, margin, link))
 
     conn.commit()
     conn.close()
 
-# AUTO-RESET: Purana DB delete karke fresh data import karega
+# Auto-reset DB to migrate all fresh sheets
 if os.path.exists(DB_NAME):
     try:
         os.remove(DB_NAME)
-    except Exception as e:
-        print("DB remove note:", e)
+    except:
+        pass
 
 init_db()
 migrate_from_excel()
 
-# ----------------- ROUTES & APIS -----------------
+# ----------------- APIS -----------------
 
 @app.route('/')
 def home():
@@ -160,10 +245,10 @@ def home():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
+    u = data.get('username')
+    p = data.get('password')
     conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password)).fetchone()
+    user = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (u, p)).fetchone()
     conn.close()
     if user:
         session['username'] = user['username']
@@ -183,9 +268,9 @@ def get_stats():
     total_qty = conn.execute("SELECT SUM(actual_stock) FROM products").fetchone()[0] or 0
     low_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock <= 10").fetchone()[0]
     pending_tasks = conn.execute("SELECT COUNT(*) FROM products WHERE status = 'Pending'").fetchone()[0]
+    total_global_skus = conn.execute("SELECT COUNT(*) FROM marketplace_products").fetchone()[0]
     
     top_stocks = conn.execute("SELECT description, actual_stock FROM products ORDER BY actual_stock DESC LIMIT 6").fetchall()
-    low_stocks = conn.execute("SELECT description, actual_stock FROM products WHERE actual_stock > 0 ORDER BY actual_stock ASC LIMIT 6").fetchall()
     
     conn.close()
     return jsonify({
@@ -193,8 +278,8 @@ def get_stats():
         "total_qty": total_qty,
         "low_stock": low_stock,
         "pending_tasks": pending_tasks,
-        "top_stocks": [dict(r) for r in top_stocks],
-        "low_stocks": [dict(r) for r in low_stocks]
+        "total_global_skus": total_global_skus,
+        "top_stocks": [dict(r) for r in top_stocks]
     })
 
 @app.route('/api/products', methods=['GET'])
@@ -222,10 +307,7 @@ def adjust_stock():
         return jsonify({"status": "error", "message": "Product not found"}), 404
     
     prev_stock = prod['actual_stock']
-    new_stock = prev_stock + change
-    if new_stock < 0:
-        new_stock = 0
-    
+    new_stock = max(0, prev_stock + change)
     status = "Pending" if new_stock <= 5 else "Completed"
     
     cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (new_stock, status, prod_id))
@@ -237,6 +319,21 @@ def adjust_stock():
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "new_stock": new_stock, "product_status": status})
+
+@app.route('/api/marketplaces', methods=['GET'])
+def get_marketplaces():
+    conn = get_db()
+    rows = conn.execute("SELECT DISTINCT marketplace, marketplace_label FROM marketplace_products").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/marketplaces/products', methods=['GET'])
+def get_marketplace_products():
+    mp = request.args.get('marketplace', 'GTUS')
+    conn = get_db()
+    items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
+    conn.close()
+    return jsonify([dict(i) for i in items])
 
 @app.route('/api/ledger', methods=['GET'])
 def get_ledger():
