@@ -8,6 +8,69 @@ app = Flask(__name__)
 app.secret_key = 'stock-secret-key-change-this'
 DB_FILE = 'inventory.db'
 
+def auto_import_excel():
+    excel_file = 'NEW APRIL STOCK SHEET 2026.xlsx'
+    if not os.path.exists(excel_file):
+        files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
+        if files:
+            excel_file = files[0]
+        else:
+            return
+
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(excel_file, data_only=True)
+        sheet_name = 'Sheet2' if 'Sheet2' in wb.sheetnames else wb.sheetnames[0]
+        sheet = wb[sheet_name]
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Reset products table to reload fresh excel data
+        cursor.execute("DELETE FROM products")
+        
+        last_brand = ""
+        row_count = 0
+        
+        for row in sheet.iter_rows(min_row=2, values_only=True): # Start reading rows
+            if not row or len(row) < 2:
+                continue
+            
+            raw_brand = str(row[0]).strip() if row[0] is not None and str(row[0]).strip() != 'None' else ""
+            description = str(row[1]).strip() if row[1] is not None and str(row[1]).strip() != 'None' else ""
+            
+            if raw_brand and raw_brand != 'BRAND NAME':
+                last_brand = raw_brand
+            brand = last_brand
+            
+            if not description or description in ['DISCRIPTION', 'DESCRIPTION']:
+                continue
+                
+            def clean_int(val):
+                try:
+                    return int(float(val))
+                except:
+                    return 0
+
+            rtt = clean_int(row[2]) if len(row) > 2 else 0
+            rin = clean_int(row[3]) if len(row) > 3 else 0
+            rit = clean_int(row[4]) if len(row) > 4 else 0
+            ge = clean_int(row[5]) if len(row) > 5 else 0
+            total = clean_int(row[6]) if len(row) > 6 else (rtt + rin + rit + ge)
+            actual_stock = clean_int(row[7]) if len(row) > 7 else 0
+
+            cursor.execute("""
+                INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
+            row_count += 1
+
+        conn.commit()
+        conn.close()
+        print(f"Successfully loaded {row_count} items from Excel!")
+    except Exception as e:
+        print(f"Error during excel import: {e}")
+
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -56,7 +119,14 @@ def init_db():
         cursor.executemany("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", default_users)
         
     conn.commit()
+
+    # Always check if products need to be imported
+    cursor.execute("SELECT COUNT(*) FROM products")
+    count = cursor.fetchone()[0]
     conn.close()
+    
+    if count == 0:
+        auto_import_excel()
 
 def login_required(f):
     @wraps(f)
@@ -124,31 +194,6 @@ def get_products():
     conn.close()
     return jsonify({'products': products, 'user_role': session.get('role')})
 
-@app.route('/api/products/add', methods=['POST'])
-@login_required
-def add_product():
-    data = request.json
-    brand = data.get('brand', '').upper()
-    description = data.get('description', '')
-    actual_stock = int(data.get('actual_stock', 0))
-    rtt = int(data.get('rtt', 0))
-    rin = int(data.get('rin', 0))
-    rit = int(data.get('rit', 0))
-    ge = int(data.get('ge', 0))
-    total = rtt + rin + rit + ge
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
-    conn.commit()
-    conn.close()
-    
-    log_action(session['username'], 'ADD_PRODUCT', f"Added {brand} - {description}")
-    return jsonify({'status': 'success'})
-
 @app.route('/api/products/adjust', methods=['POST'])
 @login_required
 def adjust_stock():
@@ -200,6 +245,12 @@ def get_activity():
     logs = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'logs': logs})
+
+# Secret route to manually trigger reload if ever needed
+@app.route('/api/admin/reload', methods=['GET'])
+def force_reload():
+    auto_import_excel()
+    return jsonify({'status': 'Excel data reloaded!'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
