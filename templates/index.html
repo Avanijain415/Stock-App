@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Inventory & Audit Control Hub</title>
+    <title>Enterprise Supply Chain & Margin Analytics Hub</title>
     <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -12,38 +12,40 @@
         :root {
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
-            --text-main: #1e293b;
+            --text-main: #0f172a;
             --nav-bg: #0f172a;
             --accent: #2563eb;
         }
         body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         .navbar-custom { background-color: var(--nav-bg); }
         .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .nav-tabs .nav-link { color: #64748b; font-weight: 500; border: none; border-bottom: 2px solid transparent; padding: 12px 20px; }
+        .nav-tabs .nav-link { color: #64748b; font-weight: 500; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; }
         .nav-tabs .nav-link.active { color: var(--accent); border-color: var(--accent); font-weight: 600; background: transparent; }
         .stat-card { border-left: 4px solid var(--accent); }
         .badge-pending { background-color: #fef3c7; color: #92400e; font-weight: 600; }
         .badge-completed { background-color: #d1fae5; color: #065f46; font-weight: 600; }
-        .table th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+        .table th { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+        .margin-pos { color: #16a34a; font-weight: bold; }
+        .margin-neg { color: #dc2626; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<!-- Login Modal Section -->
+<!-- Login Section -->
 <div class="container py-5" id="loginSection">
     <div class="row justify-content-center pt-5">
         <div class="col-md-4">
             <div class="card p-4 shadow-lg text-center">
                 <div class="mb-3"><i class="bi bi-shield-lock-fill fs-1 text-primary"></i></div>
-                <h4 class="fw-bold mb-1">Enterprise Warehouse</h4>
-                <p class="text-muted small mb-4">Sign in to manage stock & audit ledgers</p>
+                <h4 class="fw-bold mb-1">Enterprise Warehouse Pro</h4>
+                <p class="text-muted small mb-4">Stock Ledger, Global Pricing & Margin Control</p>
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
-                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
+                    <input type="text" id="username" class="form-control" placeholder="master or worker1">
                 </div>
                 <div class="mb-4 text-start">
                     <label class="form-label small fw-bold">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="••••••••">
+                    <input type="password" id="password" class="form-control" placeholder="admin123 or worker123">
                 </div>
                 <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In</button>
             </div>
@@ -53,11 +55,11 @@
 
 <!-- Main Application Section -->
 <div class="d-none" id="appSection">
-    <!-- Top Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-dark navbar-custom px-4 py-2">
         <div class="d-flex align-items-center">
-            <i class="bi bi-box-seam-fill text-primary fs-4 me-2"></i>
-            <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
+            <i class="bi bi-globe-americas text-primary fs-4 me-2"></i>
+            <span class="navbar-brand fw-bold fs-5 mb-0">Global Inventory & Margin Hub</span>
         </div>
         <div class="d-flex align-items-center gap-3">
             <span class="badge bg-primary px-3 py-2" id="roleBadge"></span>
@@ -72,53 +74,54 @@
                 <a class="nav-link active" data-bs-toggle="tab" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Dashboard</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="inventoryTabLink" data-bs-toggle="tab" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Stock Management</a>
+                <a class="nav-link" id="inventoryTabLink" data-bs-toggle="tab" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Warehouse Stock Ops</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#ledgerTab"><i class="bi bi-journal-text me-1"></i> Detailed Ledger & History</a>
+                <a class="nav-link" data-bs-toggle="tab" href="#ledgerTab"><i class="bi bi-journal-text me-1"></i> Item History & Ledger</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#marketplaceTab" onclick="loadMarketplaceData()"><i class="bi bi-currency-exchange me-1"></i> Country Pricing & Margins</a>
             </li>
         </ul>
 
         <div class="tab-content">
             <!-- TAB 1: EXECUTIVE DASHBOARD (Master Only) -->
             <div class="tab-pane fade show active master-only" id="dashboardTab">
-                <!-- Summary Metric Cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
                         <div class="card p-3 stat-card">
-                            <span class="text-muted small fw-bold">TOTAL PRODUCTS</span>
+                            <span class="text-muted small fw-bold">TOTAL SKUs</span>
                             <h3 class="fw-bold my-1" id="statTotalItems">0</h3>
-                            <span class="text-success small"><i class="bi bi-check-circle"></i> Active SKUs</span>
+                            <span class="text-success small"><i class="bi bi-check-circle"></i> Active Warehouse Items</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left-color: #10b981;">
-                            <span class="text-muted small fw-bold">TOTAL PHYSICAL UNITS</span>
+                            <span class="text-muted small fw-bold">TOTAL STOCK UNITS</span>
                             <h3 class="fw-bold my-1 text-success" id="statTotalQty">0</h3>
-                            <span class="text-muted small">In-stock warehouse items</span>
+                            <span class="text-muted small">Physical inventory available</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left-color: #ef4444;">
-                            <span class="text-muted small fw-bold">LOW STOCK ALERTS</span>
+                            <span class="text-muted small fw-bold">LOW STOCK WARNINGS</span>
                             <h3 class="fw-bold my-1 text-danger" id="statLowStock">0</h3>
                             <span class="text-danger small">Stock &le; 10 units</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left-color: #f59e0b;">
-                            <span class="text-muted small fw-bold">PENDING ACTIONS</span>
-                            <h3 class="fw-bold my-1 text-warning" id="statPending">0</h3>
-                            <span class="text-warning small">Requires reorder / inspection</span>
+                            <span class="text-muted small fw-bold">GLOBAL MARKETPLACE SKUs</span>
+                            <h3 class="fw-bold my-1 text-warning" id="statGlobalSkus">0</h3>
+                            <span class="text-warning small">US, CA, AU, UAE, IN pricing</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Live Charts & Activity Feed -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Highest Stock Volume (Units)</h6>
+                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Volume</h6>
                             <canvas id="topStockChart" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
@@ -126,7 +129,7 @@
                         <div class="card p-3 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Live Worker Audit Feed</h6>
-                                <span class="badge bg-danger pulse">LIVE</span>
+                                <span class="badge bg-danger">REAL-TIME</span>
                             </div>
                             <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                                 <table class="table table-sm table-hover align-middle mb-0">
@@ -138,7 +141,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: INVENTORY STOCK OPS -->
+            <!-- TAB 2: WAREHOUSE STOCK OPS -->
             <div class="tab-pane fade" id="inventoryTab">
                 <div class="card p-3 mb-3">
                     <div class="row g-2 align-items-center">
@@ -170,8 +173,8 @@
                                     <th>Price / MRP</th>
                                     <th>Current Stock</th>
                                     <th>Task Status</th>
-                                    <th>Quick Adjust</th>
-                                    <th>Audit</th>
+                                    <th>Stock Ops</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody"></tbody>
@@ -185,16 +188,16 @@
                 <div class="card p-3 mb-3">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Ledger Audit</label>
+                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Complete Ledger Timeline</label>
                             <select id="ledgerProductSelect" class="form-select" onchange="loadProductLedger()">
-                                <option value="">-- All Recent Warehouse Transactions --</option>
+                                <option value="">-- All Recent Transactions --</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="card p-3">
-                    <h6 class="fw-bold mb-3" id="ledgerTableHeading">Complete Transaction & Audit Trail</h6>
+                    <h6 class="fw-bold mb-3">Audit Log & Date-Wise Ledger</h6>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover align-middle">
                             <thead class="table-light">
@@ -210,6 +213,50 @@
                                 </tr>
                             </thead>
                             <tbody id="fullLedgerBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: COUNTRY-WISE PRICING & MARGIN ANALYSIS (New ✨) -->
+            <div class="tab-pane fade" id="marketplaceTab">
+                <div class="card p-3 mb-3">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Select Marketplace / Country</label>
+                            <select id="marketplaceSelect" class="form-select fw-semibold" onchange="loadMarketplaceData()">
+                                <option value="GTUS">USA 🇺🇸 (GTUS)</option>
+                                <option value="CANADA">Canada 🇨🇦</option>
+                                <option value="GTAU">Australia 🇦🇺 (GTAU)</option>
+                                <option value="UAE">UAE 🇦🇪</option>
+                                <option value="INDIA">India 🇮🇳</option>
+                                <option value="VAIS NEW">USA 🇺🇸 (VAIS)</option>
+                                <option value="RTAU">Australia 🇦🇺 (RTAU)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 text-end pt-3">
+                            <span class="badge bg-light text-dark border p-2 me-2">Formulas: Purchase Cost + FBA Fee + Freight = Min Selling Price</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>SKU & ASIN</th>
+                                    <th>Selling Price</th>
+                                    <th>FBA Fee</th>
+                                    <th>Conv. Rate</th>
+                                    <th>Freight</th>
+                                    <th>Min Selling Price</th>
+                                    <th>Margin (%)</th>
+                                    <th>Amazon Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marketplaceTableBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -245,7 +292,7 @@ async function handleLogin() {
             tab.show();
         } else {
             loadDashboard();
-            setInterval(loadDashboard, 15000); // 15s auto-refresh for master live feed
+            setInterval(loadDashboard, 15000);
         }
         loadProducts();
         loadLedger();
@@ -260,30 +307,27 @@ async function loadDashboard() {
     document.getElementById('statTotalItems').innerText = stats.total_items;
     document.getElementById('statTotalQty').innerText = Number(stats.total_qty).toLocaleString();
     document.getElementById('statLowStock').innerText = stats.low_stock;
-    document.getElementById('statPending').innerText = stats.pending_tasks;
+    document.getElementById('statGlobalSkus').innerText = stats.total_global_skus;
 
-    // Top stock chart
     const ctx = document.getElementById('topStockChart').getContext('2d');
     if(chartInstance) chartInstance.destroy();
     chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: stats.top_stocks.map(s => s.description.length > 20 ? s.description.substring(0,20)+'...' : s.description),
+            labels: stats.top_stocks.map(s => s.description.length > 18 ? s.description.substring(0,18)+'...' : s.description),
             datasets: [{
-                label: 'Stock Quantity',
+                label: 'Units in Stock',
                 data: stats.top_stocks.map(s => s.actual_stock),
-                backgroundColor: '#3b82f6',
+                backgroundColor: '#2563eb',
                 borderRadius: 6
             }]
         },
         options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // Activity feed
     const logRes = await fetch('/api/ledger');
     const logs = await logRes.json();
-    const feedBody = document.getElementById('liveFeedBody');
-    feedBody.innerHTML = logs.slice(0, 8).map(l => `
+    document.getElementById('liveFeedBody').innerHTML = logs.slice(0, 8).map(l => `
         <tr>
             <td><span class="badge ${l.action==='RECEIVE'?'bg-success':'bg-danger'}">${l.action}</span></td>
             <td><strong class="small">${l.product_desc}</strong><br><span class="text-muted" style="font-size:0.75rem">${l.details || ''}</span></td>
@@ -296,13 +340,12 @@ async function loadProducts() {
     const res = await fetch('/api/products');
     allProducts = await res.json();
     
-    // Populate select filters
     const brandSelect = document.getElementById('invBrandFilter');
     const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
     brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
 
     const ledgerSelect = document.getElementById('ledgerProductSelect');
-    ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
+    ledgerSelect.innerHTML = '<option value="">-- All Recent Transactions --</option>' + 
         allProducts.map(p => `<option value="${p.id}">${p.description}</option>`).join('');
 
     renderInventory(allProducts);
@@ -382,6 +425,37 @@ function viewSingleProductLedger(prodId) {
     const ledgerTabTrigger = new bootstrap.Tab(document.querySelector('a[href="#ledgerTab"]'));
     ledgerTabTrigger.show();
     loadLedger(prodId);
+}
+
+async function loadMarketplaceData() {
+    const mp = document.getElementById('marketplaceSelect').value;
+    const res = await fetch(`/api/marketplaces/products?marketplace=${mp}`);
+    const items = await res.json();
+    const tbody = document.getElementById('marketplaceTableBody');
+    
+    if(items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No marketplace pricing records found for this country.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map((item, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td>
+                <strong>${item.sku}</strong><br>
+                <span class="text-muted small">ASIN: ${item.asin || 'N/A'}</span>
+            </td>
+            <td><strong>${item.selling_price ? item.selling_price.toFixed(2) : '-'}</strong></td>
+            <td>${item.fba_fee ? item.fba_fee.toFixed(2) : '-'}</td>
+            <td>${item.conv_rate || '-'}</td>
+            <td>${item.freight ? item.freight.toFixed(2) : '-'}</td>
+            <td><span class="badge bg-light text-dark border">${item.min_selling_rate ? item.min_selling_rate.toFixed(2) : '-'}</span></td>
+            <td class="${item.margin >= 0 ? 'margin-pos' : 'margin-neg'}">${item.margin ? item.margin.toFixed(2) + '%' : '-'}</td>
+            <td>
+                ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
+            </td>
+        </tr>
+    `).join('');
 }
 
 function filterInventory() {
