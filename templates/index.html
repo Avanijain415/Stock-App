@@ -8,67 +8,125 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f4f6f8;
+            --bg-color: #f1f5f3;
             --card-bg: #ffffff;
-            --text-color: #212529;
-            --table-head: #e9ecef;
-            --border-color: #dee2e6;
+            --text-primary: #1c2d27;
+            --text-secondary: #5c7068;
+            --topbar-bg: #112820;
+            --table-head: #e2ebe6;
+            --border-color: #d1ded8;
+            --accent-green: #059669;
+            --card-hover: #fafcfb;
         }
         [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --table-head: #2c2c2c;
-            --border-color: #333333;
+            --bg-color: #121816;
+            --card-bg: #1c2421;
+            --text-primary: #f0fdf4;
+            --text-secondary: #9ca3af;
+            --topbar-bg: #0b1210;
+            --table-head: #28332f;
+            --border-color: #2e3d37;
+            --accent-green: #10b981;
+            --card-hover: #222c29;
         }
         body { 
             background-color: var(--bg-color); 
-            color: var(--text-color); 
-            transition: all 0.3s ease; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-primary); 
+            transition: all 0.25s ease-in-out; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
+        .navbar { background-color: var(--topbar-bg) !important; }
         .card { 
             background-color: var(--card-bg); 
             border: 1px solid var(--border-color); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
             border-radius: 12px;
         }
-        .table { color: var(--text-color); }
-        .table thead th { background-color: var(--table-head); color: var(--text-color); }
-        .badge-out { background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
-        .badge-low { background-color: #ffc107; color: black; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
-        .badge-ok { background-color: #198754; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; }
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        }
+        .stat-title {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        .stat-number {
+            color: var(--text-primary) !important;
+            font-weight: 800;
+        }
+        .table { color: var(--text-primary); }
+        .table thead th { 
+            background-color: var(--table-head); 
+            color: var(--text-primary); 
+            font-size: 0.82rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+        .table tbody tr:hover {
+            background-color: var(--card-hover);
+        }
+        .badge-out { background-color: #ef4444; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
+        .badge-low { background-color: #f59e0b; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
+        .badge-ok { background-color: #10b981; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
+
+        /* Filter Pills */
+        .filter-pill {
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-pill.active, .filter-pill:hover {
+            background: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+        }
     </style>
 </head>
 <body data-theme="light">
 
-    <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4 py-2 shadow-sm">
-        <span class="navbar-brand fw-bold fs-4">📦 Stock Book</span>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark px-4 py-2 shadow-sm">
+        <span class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2">
+            📦 Stock Book
+        </span>
         <div class="ms-auto d-flex align-items-center gap-3">
             <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="toggleTheme()">🌓 Theme</button>
-            <span id="userInfo" class="badge bg-secondary fs-6"></span>
+            <span id="userInfo" class="badge bg-success bg-opacity-20 text-light border border-success border-opacity-25 px-3 py-2 fs-6"></span>
             <button id="logoutBtn" class="btn btn-danger btn-sm d-none rounded-pill px-3" onclick="logout()">Logout</button>
         </div>
     </nav>
 
     <div class="container-fluid px-4 my-4">
 
-        <!-- Login Section -->
+        <!-- Login Card -->
         <div id="loginSection" class="row justify-content-center my-5">
             <div class="col-md-4">
-                <div class="card p-4 shadow">
-                    <h3 class="mb-4 text-center fw-bold">Inventory Login</h3>
+                <div class="card p-4 shadow-lg border-0">
+                    <h3 class="mb-4 text-center fw-bold">Inventory Access</h3>
                     <form onsubmit="handleLogin(event)">
                         <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" id="username" class="form-control" placeholder="master / worker1" required>
+                            <label class="form-label font-semibold">Username</label>
+                            <input type="text" id="username" class="form-control form-control-lg fs-6" placeholder="master / worker1" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" id="password" class="form-control" placeholder="Password" required>
+                            <label class="form-label font-semibold">Password</label>
+                            <input type="password" id="password" class="form-control form-control-lg fs-6" placeholder="Password" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Sign In</button>
+                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">Sign In</button>
                     </form>
                 </div>
             </div>
@@ -77,55 +135,62 @@
         <!-- Main Dashboard App Section -->
         <div id="appSection" class="d-none">
 
-            <!-- Realtime Metrics Cards -->
+            <!-- Summary KPI Stats -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card p-3 text-center">
-                        <span class="text-muted fw-bold">TOTAL PRODUCTS</span>
-                        <h2 id="statTotal" class="fw-bold my-1">0</h2>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 text-center">
+                        <span class="stat-title">TOTAL PRODUCTS</span>
+                        <h2 id="statTotal" class="stat-number my-1 fs-1">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card p-3 text-center border-success">
-                        <span class="text-success fw-bold">IN STOCK</span>
-                        <h2 id="statInStock" class="fw-bold text-success my-1">0</h2>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 text-center border-start border-4 border-success">
+                        <span class="stat-title text-success">IN STOCK</span>
+                        <h2 id="statInStock" class="stat-number text-success my-1 fs-1">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card p-3 text-center border-warning">
-                        <span class="text-warning fw-bold">LOW STOCK (≤10)</span>
-                        <h2 id="statLow" class="fw-bold text-warning my-1">0</h2>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 text-center border-start border-4 border-warning">
+                        <span class="stat-title text-warning">LOW STOCK (≤10)</span>
+                        <h2 id="statLow" class="stat-number text-warning my-1 fs-1">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card p-3 text-center border-danger">
-                        <span class="text-danger fw-bold">OUT OF STOCK</span>
-                        <h2 id="statOut" class="fw-bold text-danger my-1">0</h2>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 text-center border-start border-4 border-danger">
+                        <span class="stat-title text-danger">OUT OF STOCK</span>
+                        <h2 id="statOut" class="stat-number text-danger my-1 fs-1">0</h2>
                     </div>
                 </div>
             </div>
 
-            <!-- Filters Bar (Brand Select & Search) -->
+            <!-- Controls & Filter Bar -->
             <div class="card p-3 mb-4">
                 <div class="row g-3 align-items-center">
-                    <div class="col-md-5">
-                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search product description or brand..." oninput="filterData()">
-                    </div>
                     <div class="col-md-4">
-                        <select id="brandSelect" class="form-select fw-bold" onchange="filterData()">
-                            <option value="ALL">ALL BRANDS ( Show Long List )</option>
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search product or brand..." oninput="filterData()">
+                    </div>
+                    <div class="col-md-3">
+                        <select id="brandSelect" class="form-select fw-semibold" onchange="filterData()">
+                            <option value="ALL">ALL BRANDS</option>
                         </select>
                     </div>
-                    <div class="col-md-3 text-end">
-                        <span id="recordCount" class="text-muted fw-bold">Showing 0 products</span>
+                    <div class="col-md-5 d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                        <span class="filter-pill active" onclick="setStatusFilter('ALL', this)">All</span>
+                        <span class="filter-pill" onclick="setStatusFilter('INSTOCK', this)">In Stock</span>
+                        <span class="filter-pill" onclick="setStatusFilter('LOW', this)">Low</span>
+                        <span class="filter-pill" onclick="setStatusFilter('OUT', this)">Out of Stock</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Inventory Data Table -->
+            <!-- Main Inventory Data Table -->
             <div class="card p-3 shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-secondary">STOCK REGISTER</h6>
+                    <span id="recordCount" class="text-secondary fw-semibold small">Showing 0 products</span>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table align-middle">
                         <thead>
                             <tr>
                                 <th>BRAND</th>
@@ -136,7 +201,7 @@
                                 <th>GE</th>
                                 <th>TOTAL</th>
                                 <th>ACTUAL STOCK</th>
-                                <th>ACTIONS</th>
+                                <th class="text-center">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody id="inventoryBody"></tbody>
@@ -144,11 +209,13 @@
                 </div>
             </div>
 
-            <!-- Realtime Master Activity Feed (Visible only for Master Account) -->
-            <div id="masterAudit" class="card p-4 d-none border-primary">
-                <h5 class="fw-bold text-primary mb-3">🔴 Live Worker Activity Tracker (Real-Time)</h5>
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                    <ul id="logList" class="list-group list-group-flush"></ul>
+            <!-- Realtime Master Audit Feed -->
+            <div id="masterAudit" class="card p-4 d-none border-0 shadow-sm">
+                <h6 class="fw-bold text-success mb-3 d-flex align-items-center gap-2">
+                    <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span> Live Worker Activity Log
+                </h6>
+                <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                    <ul id="logList" class="list-group list-group-flush small"></ul>
                 </div>
             </div>
 
@@ -158,6 +225,7 @@
     <script>
         let currentRole = null;
         let products = [];
+        let statusFilter = 'ALL';
 
         function toggleTheme() {
             const body = document.body;
@@ -184,7 +252,7 @@
                 
                 if(currentRole === 'master') {
                     document.getElementById('masterAudit').classList.remove('d-none');
-                    setInterval(fetchLogs, 3000); // Poll real-time logs every 3 seconds
+                    setInterval(fetchLogs, 3000);
                 }
                 loadProducts();
             } else {
@@ -197,7 +265,7 @@
             const data = await res.json();
             products = data.products;
             populateBrands();
-            renderTable(products);
+            filterData();
             updateStats();
         }
 
@@ -205,7 +273,14 @@
             const brands = [...new Set(products.map(p => p.brand))].sort();
             const brandSelect = document.getElementById('brandSelect');
             brandSelect.innerHTML = '<option value="ALL">ALL BRANDS</option>' + 
-            brands.map(b => `<option value="${b}">${b}</option>`).join('');
+                brands.map(b => `<option value="${b}">${b}</option>`).join('');
+        }
+
+        function setStatusFilter(status, el) {
+            statusFilter = status;
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+            filterData();
         }
 
         function renderTable(items) {
@@ -213,7 +288,7 @@
             document.getElementById('recordCount').innerText = `Showing ${items.length} of ${products.length} products`;
 
             if(items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No products found matching filters</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No matching stock items found</td></tr>`;
                 return;
             }
 
@@ -224,19 +299,19 @@
 
                 return `
                     <tr>
-                        <td><strong class="text-primary">${p.brand}</strong></td>
+                        <td><strong class="text-success">${p.brand}</strong></td>
                         <td>${p.description} ${badge}</td>
-                        <td>${p.rtt || 0}</td>
-                        <td>${p.rin || 0}</td>
-                        <td>${p.rit || 0}</td>
-                        <td>${p.ge || 0}</td>
-                        <td>${p.total || 0}</td>
+                        <td class="text-secondary">${p.rtt || 0}</td>
+                        <td class="text-secondary">${p.rin || 0}</td>
+                        <td class="text-secondary">${p.rit || 0}</td>
+                        <td class="text-secondary">${p.ge || 0}</td>
+                        <td class="fw-semibold">${p.total || 0}</td>
                         <td><span class="fs-6 fw-bold">${p.actual_stock}</span></td>
-                        <td>
+                        <td class="text-center">
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-danger fw-bold" onclick="adjust(${p.id}, 'issue')">- Issue</button>
-                                <button class="btn btn-outline-success fw-bold" onclick="adjust(${p.id}, 'receive')">+ Receive</button>
-                                ${currentRole === 'master' ? `<button class="btn btn-danger btn-sm ms-2 rounded" onclick="deleteProd(${p.id})">Delete</button>` : ''}
+                                <button class="btn btn-outline-danger px-2 py-1 fw-bold" onclick="adjust(${p.id}, 'issue')">- Issue</button>
+                                <button class="btn btn-outline-success px-2 py-1 fw-bold" onclick="adjust(${p.id}, 'receive')">+ Receive</button>
+                                ${currentRole === 'master' ? `<button class="btn btn-link text-danger text-decoration-none px-2" onclick="deleteProd(${p.id})">Delete</button>` : ''}
                             </div>
                         </td>
                     </tr>
@@ -254,12 +329,8 @@
                 body: JSON.stringify({product_id: id, amount: parseInt(qty), type: type})
             });
 
-            if(res.ok) {
-                loadProducts();
-            } else {
-                const err = await res.json();
-                alert(err.error);
-            }
+            if(res.ok) loadProducts();
+            else alert((await res.json()).error);
         }
 
         async function deleteProd(id) {
@@ -273,9 +344,9 @@
             const res = await fetch('/api/activity');
             const data = await res.json();
             document.getElementById('logList').innerHTML = data.logs.map(l => `
-                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2">
+                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-10">
                     <div>
-                        <span class="badge bg-dark me-2">${l.username}</span>
+                        <span class="badge bg-success bg-opacity-20 text-success me-2">${l.username}</span>
                         <strong>${l.action}</strong> - <span class="text-secondary">${l.details}</span>
                     </div>
                     <small class="text-muted">${l.timestamp}</small>
@@ -290,7 +361,13 @@
             const filtered = products.filter(p => {
                 const matchesSearch = p.brand.toLowerCase().includes(search) || p.description.toLowerCase().includes(search);
                 const matchesBrand = (brand === 'ALL') || (p.brand === brand);
-                return matchesSearch && matchesBrand;
+                
+                let matchesStatus = true;
+                if(statusFilter === 'INSTOCK') matchesStatus = p.actual_stock > 10;
+                else if(statusFilter === 'LOW') matchesStatus = p.actual_stock > 0 && p.actual_stock <= 10;
+                else if(statusFilter === 'OUT') matchesStatus = p.actual_stock === 0;
+
+                return matchesSearch && matchesBrand && matchesStatus;
             });
 
             renderTable(filtered);
