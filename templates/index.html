@@ -3,131 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Stock & Ledger Management</title>
+    <title>Enterprise Inventory & Audit Control Hub</title>
+    <!-- Bootstrap 5 & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-main: #f4f6f8; --card-bg: #ffffff; --text-color: #212529;
-            --primary: #198754; --primary-hover: #146c43; --border-color: #dee2e6;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --nav-bg: #0f172a;
+            --accent: #2563eb;
         }
-        [data-theme="dark"] {
-            --bg-main: #121212; --card-bg: #1e1e1e; --text-color: #e0e0e0;
-            --primary: #20c997; --primary-hover: #1aa179; --border-color: #333333;
-        }
-        body { background-color: var(--bg-main); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card { background-color: var(--card-bg); border-color: var(--border-color); }
-        .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; }
+        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .navbar-custom { background-color: var(--nav-bg); }
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .nav-tabs .nav-link { color: #64748b; font-weight: 500; border: none; border-bottom: 2px solid transparent; padding: 12px 20px; }
+        .nav-tabs .nav-link.active { color: var(--accent); border-color: var(--accent); font-weight: 600; background: transparent; }
+        .stat-card { border-left: 4px solid var(--accent); }
+        .badge-pending { background-color: #fef3c7; color: #92400e; font-weight: 600; }
+        .badge-completed { background-color: #d1fae5; color: #065f46; font-weight: 600; }
+        .table th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
     </style>
 </head>
 <body>
 
-<div class="container py-4" id="loginSection">
-    <div class="row justify-content-center">
+<!-- Login Modal Section -->
+<div class="container py-5" id="loginSection">
+    <div class="row justify-content-center pt-5">
         <div class="col-md-4">
-            <div class="card shadow p-4 mt-5">
-                <h4 class="text-center mb-3">📦 Inventory Login</h4>
-                <div class="mb-3">
-                    <label>Username</label>
-                    <input type="text" id="username" class="form-control" placeholder="master or worker1">
+            <div class="card p-4 shadow-lg text-center">
+                <div class="mb-3"><i class="bi bi-shield-lock-fill fs-1 text-primary"></i></div>
+                <h4 class="fw-bold mb-1">Enterprise Warehouse</h4>
+                <p class="text-muted small mb-4">Sign in to manage stock & audit ledgers</p>
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
                 </div>
-                <div class="mb-3">
-                    <label>Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="admin123 or worker123">
+                <div class="mb-4 text-start">
+                    <label class="form-label small fw-bold">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••">
                 </div>
-                <button class="btn btn-success w-100" onclick="handleLogin()">Login</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="container-fluid px-4 py-3 d-none" id="appSection">
-    <!-- Navbar -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Warehouse Inventory & Ledger Hub</h2>
-        <div>
-            <span class="badge bg-primary me-2" id="roleBadge"></span>
-            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()"><i class="bi bi-moon"></i></button>
-            <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">Logout</button>
+<!-- Main Application Section -->
+<div class="d-none" id="appSection">
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-dark navbar-custom px-4 py-2">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-box-seam-fill text-primary fs-4 me-2"></i>
+            <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
         </div>
-    </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-primary px-3 py-2" id="roleBadge"></span>
+            <button class="btn btn-outline-light btn-sm" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </div>
+    </nav>
 
-    <!-- Analytics (Master only) -->
-    <div class="row mb-4 master-only">
-        <div class="col-md-6">
-            <div class="card p-3 shadow-sm"><canvas id="stockDonut" style="max-height:220px;"></canvas></div>
-        </div>
-        <div class="col-md-6">
-            <div class="card p-3 shadow-sm"><canvas id="lowStockBar" style="max-height:220px;"></canvas></div>
-        </div>
-    </div>
+    <div class="container-fluid px-4 py-4">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="mainTabs">
+            <li class="nav-item master-only">
+                <a class="nav-link active" data-bs-toggle="tab" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="inventoryTabLink" data-bs-toggle="tab" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Stock Management</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#ledgerTab"><i class="bi bi-journal-text me-1"></i> Detailed Ledger & History</a>
+            </li>
+        </ul>
 
-    <!-- Action Bar -->
-    <div class="card p-3 mb-4 shadow-sm">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search description, HSN, Brand..." oninput="filterData()">
-            </div>
-            <div class="col-md-3">
-                <select id="brandFilter" class="form-select" onchange="filterData()">
-                    <option value="">All Brands</option>
-                </select>
-            </div>
-            <div class="col-md-5 text-end master-only">
-                <button class="btn btn-outline-success" onclick="exportCSV()"><i class="bi bi-download"></i> Export Master CSV</button>
-            </div>
-        </div>
-    </div>
+        <div class="tab-content">
+            <!-- TAB 1: EXECUTIVE DASHBOARD (Master Only) -->
+            <div class="tab-pane fade show active master-only" id="dashboardTab">
+                <!-- Summary Metric Cards -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card">
+                            <span class="text-muted small fw-bold">TOTAL PRODUCTS</span>
+                            <h3 class="fw-bold my-1" id="statTotalItems">0</h3>
+                            <span class="text-success small"><i class="bi bi-check-circle"></i> Active SKUs</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left-color: #10b981;">
+                            <span class="text-muted small fw-bold">TOTAL PHYSICAL UNITS</span>
+                            <h3 class="fw-bold my-1 text-success" id="statTotalQty">0</h3>
+                            <span class="text-muted small">In-stock warehouse items</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left-color: #ef4444;">
+                            <span class="text-muted small fw-bold">LOW STOCK ALERTS</span>
+                            <h3 class="fw-bold my-1 text-danger" id="statLowStock">0</h3>
+                            <span class="text-danger small">Stock &le; 10 units</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left-color: #f59e0b;">
+                            <span class="text-muted small fw-bold">PENDING ACTIONS</span>
+                            <h3 class="fw-bold my-1 text-warning" id="statPending">0</h3>
+                            <span class="text-warning small">Requires reorder / inspection</span>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Product Table -->
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Description & HSN</th>
-                        <th>Brand</th>
-                        <th>Price/MRP</th>
-                        <th>Actual Stock</th>
-                        <th>Status</th>
-                        <th>Adjust Stock</th>
-                        <th>Audit Ledger</th>
-                    </tr>
-                </thead>
-                <tbody id="productTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- ITEM LEDGER MODAL -->
-<div class="modal fade" id="ledgerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ledgerTitle">Product Ledger History</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <!-- Live Charts & Activity Feed -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Highest Stock Volume (Units)</h6>
+                            <canvas id="topStockChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Live Worker Audit Feed</h6>
+                                <span class="badge bg-danger pulse">LIVE</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <tbody id="liveFeedBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <div id="productQuickDetails" class="alert alert-info mb-3"></div>
-                <h6>📅 Transaction Timeline</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>User</th>
-                                <th>Action</th>
-                                <th>Qty</th>
-                                <th>Prev Stock</th>
-                                <th>New Stock</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ledgerTableBody"></tbody>
-                    </table>
+
+            <!-- TAB 2: INVENTORY STOCK OPS -->
+            <div class="tab-pane fade" id="inventoryTab">
+                <div class="card p-3 mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                <input type="text" id="invSearch" class="form-control border-start-0" placeholder="Search SKU, Description, HSN..." oninput="filterInventory()">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="invBrandFilter" class="form-select" onchange="filterInventory()">
+                                <option value="">All Brands</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5 text-end master-only">
+                            <a href="/api/export/csv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Master CSV</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product Details</th>
+                                    <th>Brand / Origin</th>
+                                    <th>Price / MRP</th>
+                                    <th>Current Stock</th>
+                                    <th>Task Status</th>
+                                    <th>Quick Adjust</th>
+                                    <th>Audit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MASTER ITEM LEDGER -->
+            <div class="tab-pane fade" id="ledgerTab">
+                <div class="card p-3 mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Ledger Audit</label>
+                            <select id="ledgerProductSelect" class="form-select" onchange="loadProductLedger()">
+                                <option value="">-- All Recent Warehouse Transactions --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-3">
+                    <h6 class="fw-bold mb-3" id="ledgerTableHeading">Complete Transaction & Audit Trail</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Product</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Quantity</th>
+                                    <th>Previous</th>
+                                    <th>New Balance</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullLedgerBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -136,13 +220,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-let currentRole = '';
+let currentUser = null;
 let allProducts = [];
-let ledgerModalObj;
-
-document.addEventListener('DOMContentLoaded', () => {
-    ledgerModalObj = new bootstrap.Modal(document.getElementById('ledgerModal'));
-});
+let chartInstance = null;
 
 async function handleLogin() {
     const u = document.getElementById('username').value;
@@ -153,119 +233,166 @@ async function handleLogin() {
         body: JSON.stringify({username: u, password: p})
     });
     if(res.ok) {
-        const data = await res.json();
-        currentRole = data.role;
+        currentUser = await res.json();
         document.getElementById('loginSection').classList.add('d-none');
         document.getElementById('appSection').classList.remove('d-none');
-        document.getElementById('roleBadge').innerText = `${data.username} (${data.role.toUpperCase()})`;
+        document.getElementById('roleBadge').innerText = `${currentUser.username.toUpperCase()} (${currentUser.role.toUpperCase()})`;
         
-        if(currentRole !== 'master') {
+        if(currentUser.role !== 'master') {
             document.querySelectorAll('.master-only').forEach(el => el.classList.add('d-none'));
+            const invLink = document.getElementById('inventoryTabLink');
+            const tab = new bootstrap.Tab(invLink);
+            tab.show();
+        } else {
+            loadDashboard();
+            setInterval(loadDashboard, 15000); // 15s auto-refresh for master live feed
         }
-        fetchProducts();
+        loadProducts();
+        loadLedger();
     } else {
-        alert('Invalid Login Credentials');
+        alert('Invalid credentials!');
     }
 }
 
-async function fetchProducts() {
-    const res = await fetch('/api/products');
-    allProducts = await res.json();
-    populateBrandFilter();
-    renderTable(allProducts);
-    if(currentRole === 'master') renderCharts();
+async function loadDashboard() {
+    const res = await fetch('/api/stats');
+    const stats = await res.json();
+    document.getElementById('statTotalItems').innerText = stats.total_items;
+    document.getElementById('statTotalQty').innerText = Number(stats.total_qty).toLocaleString();
+    document.getElementById('statLowStock').innerText = stats.low_stock;
+    document.getElementById('statPending').innerText = stats.pending_tasks;
+
+    // Top stock chart
+    const ctx = document.getElementById('topStockChart').getContext('2d');
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stats.top_stocks.map(s => s.description.length > 20 ? s.description.substring(0,20)+'...' : s.description),
+            datasets: [{
+                label: 'Stock Quantity',
+                data: stats.top_stocks.map(s => s.actual_stock),
+                backgroundColor: '#3b82f6',
+                borderRadius: 6
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // Activity feed
+    const logRes = await fetch('/api/ledger');
+    const logs = await logRes.json();
+    const feedBody = document.getElementById('liveFeedBody');
+    feedBody.innerHTML = logs.slice(0, 8).map(l => `
+        <tr>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':'bg-danger'}">${l.action}</span></td>
+            <td><strong class="small">${l.product_desc}</strong><br><span class="text-muted" style="font-size:0.75rem">${l.details || ''}</span></td>
+            <td class="text-end small"><span class="badge bg-secondary">${l.username}</span><br><span class="text-muted" style="font-size:0.7rem">${l.timestamp}</span></td>
+        </tr>
+    `).join('');
 }
 
-function renderTable(items) {
-    const tbody = document.getElementById('productTableBody');
+async function loadProducts() {
+    const res = await fetch('/api/products');
+    allProducts = await res.json();
+    
+    // Populate select filters
+    const brandSelect = document.getElementById('invBrandFilter');
+    const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
+    brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+
+    const ledgerSelect = document.getElementById('ledgerProductSelect');
+    ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
+        allProducts.map(p => `<option value="${p.id}">${p.description}</option>`).join('');
+
+    renderInventory(allProducts);
+}
+
+function renderInventory(items) {
+    const tbody = document.getElementById('inventoryTableBody');
     tbody.innerHTML = items.map(p => `
         <tr>
-            <td>${p.id}</td>
+            <td class="text-muted fw-bold">#${p.id}</td>
             <td>
                 <strong>${p.description}</strong><br>
-                <small class="text-muted">HSN: ${p.hsn_code || 'N/A'} | Expiry: ${p.expiry_date || 'N/A'}</small>
+                <span class="text-muted small">HSN: ${p.hsn_code || 'N/A'} | Expiry: ${p.expiry_date || 'N/A'}</span>
             </td>
-            <td>${p.brand}</td>
+            <td><span class="badge bg-light text-dark border">${p.brand}</span><br><small class="text-muted">${p.country}</small></td>
             <td>₹${p.price} <br><small class="text-muted">MRP: ₹${p.mrp}</small></td>
-            <td><h5 class="mb-0 text-${p.actual_stock > 10 ? 'success' : (p.actual_stock > 0 ? 'warning' : 'danger')}">${p.actual_stock}</h5></td>
-            <td><span class="badge ${p.status === 'Completed' ? 'bg-success' : 'bg-warning'} status-badge">${p.status}</span></td>
+            <td><h5 class="mb-0 fw-bold text-${p.actual_stock > 10 ? 'dark' : (p.actual_stock > 0 ? 'warning' : 'danger')}">${p.actual_stock}</h5></td>
+            <td><span class="badge ${p.status === 'Completed' ? 'badge-completed' : 'badge-pending'} px-2 py-1">${p.status}</span></td>
             <td>
-                <button class="btn btn-sm btn-outline-danger me-1" onclick="adjust(${p.id}, -1)">- Issue</button>
-                <button class="btn btn-sm btn-outline-success" onclick="adjust(${p.id}, 1)">+ Receive</button>
+                <button class="btn btn-sm btn-outline-danger me-1" onclick="adjustStock(${p.id}, -1)">- Issue</button>
+                <button class="btn btn-sm btn-outline-success" onclick="adjustStock(${p.id}, 1)">+ Receive</button>
             </td>
             <td>
-                <button class="btn btn-sm btn-info text-white" onclick="viewLedger(${p.id})">📖 View History</button>
+                <button class="btn btn-sm btn-light border text-primary" onclick="viewSingleProductLedger(${p.id})"><i class="bi bi-clock-history"></i> History</button>
             </td>
         </tr>
     `).join('');
 }
 
-async function adjust(id, change) {
-    const qty = prompt(`Enter quantity to ${change > 0 ? 'Receive (+)' : 'Issue (-)'}:`, "1");
+async function adjustStock(id, direction) {
+    const qty = prompt(`Enter quantity to ${direction > 0 ? 'RECEIVE (+)' : 'ISSUE (-)'}:`, "1");
     if(!qty || isNaN(qty) || qty <= 0) return;
-    
+
     const res = await fetch('/api/products/adjust', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({id: id, change: parseInt(qty) * change})
+        body: JSON.stringify({id: id, change: parseInt(qty) * direction})
     });
-    if(res.ok) fetchProducts();
-}
-
-async function viewLedger(id) {
-    const res = await fetch(`/api/products/${id}/ledger`);
-    const data = await res.json();
-    const p = data.product;
-    
-    document.getElementById('ledgerTitle').innerText = `Ledger: ${p.description}`;
-    document.getElementById('productQuickDetails').innerHTML = `
-        <strong>Brand:</strong> ${p.brand} | <strong>Current Stock:</strong> ${p.actual_stock} | 
-        <strong>Opening Stock:</strong> ${p.opening_stock} | <strong>Damage:</strong> ${p.damage}
-    `;
-    
-    const tbody = document.getElementById('ledgerTableBody');
-    if(data.ledger.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No historical transactions logged yet.</td></tr>`;
-    } else {
-        tbody.innerHTML = data.ledger.map(l => `
-            <tr>
-                <td>${l.timestamp}</td>
-                <td><span class="badge bg-secondary">${l.username}</span></td>
-                <td><span class="badge bg-${l.action === 'RECEIVE' ? 'success' : 'danger'}">${l.action}</span></td>
-                <td>${l.quantity}</td>
-                <td>${l.prev_stock}</td>
-                <td><strong>${l.new_stock}</strong></td>
-                <td><small>${l.details || ''}</small></td>
-            </tr>
-        `).join('');
+    if(res.ok) {
+        loadProducts();
+        if(currentUser.role === 'master') loadDashboard();
     }
-    ledgerModalObj.show();
 }
 
-function filterData() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    const brand = document.getElementById('brandFilter').value;
+async function loadLedger(productId = '') {
+    const url = productId ? `/api/ledger?product_id=${productId}` : '/api/ledger';
+    const res = await fetch(url);
+    const logs = await res.json();
+    const tbody = document.getElementById('fullLedgerBody');
+    
+    if(logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history available.</td></tr>`;
+        return;
+    }
+    
+    tbody.innerHTML = logs.map(l => `
+        <tr>
+            <td class="small text-muted">${l.timestamp}</td>
+            <td><strong>${l.product_desc}</strong></td>
+            <td><span class="badge bg-secondary">${l.username}</span></td>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':'bg-danger'}">${l.action}</span></td>
+            <td class="fw-bold">${l.quantity}</td>
+            <td class="text-muted">${l.prev_stock}</td>
+            <td class="fw-bold text-primary">${l.new_stock}</td>
+            <td class="small text-muted">${l.details || ''}</td>
+        </tr>
+    `).join('');
+}
+
+function loadProductLedger() {
+    const prodId = document.getElementById('ledgerProductSelect').value;
+    loadLedger(prodId);
+}
+
+function viewSingleProductLedger(prodId) {
+    document.getElementById('ledgerProductSelect').value = prodId;
+    const ledgerTabTrigger = new bootstrap.Tab(document.querySelector('a[href="#ledgerTab"]'));
+    ledgerTabTrigger.show();
+    loadLedger(prodId);
+}
+
+function filterInventory() {
+    const q = document.getElementById('invSearch').value.toLowerCase();
+    const brand = document.getElementById('invBrandFilter').value;
     const filtered = allProducts.filter(p => {
-        const matchesSearch = p.description.toLowerCase().includes(query) || (p.hsn_code && p.hsn_code.toLowerCase().includes(query)) || p.brand.toLowerCase().includes(query);
+        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || p.brand.toLowerCase().includes(q);
         const matchesBrand = brand === '' || p.brand === brand;
-        return matchesSearch && matchesBrand;
+        return matchesQuery && matchesBrand;
     });
-    renderTable(filtered);
-}
-
-function populateBrandFilter() {
-    const brands = [...new Set(allProducts.map(p => p.brand))].filter(Boolean);
-    const select = document.getElementById('brandFilter');
-    select.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
-}
-
-function exportCSV() {
-    window.location.href = '/api/export/csv';
-}
-
-function toggleTheme() {
-    const current = document.body.getAttribute('data-theme');
-    document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    renderInventory(filtered);
 }
 
 function handleLogout() {
