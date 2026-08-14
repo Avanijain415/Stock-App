@@ -3,564 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Book Management</title>
-    <!-- Bootstrap 5 CSS -->
+    <title>Enterprise Stock & Ledger Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Chart.js for Visual Analytics -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-color: #f1f5f3;
-            --card-bg: #ffffff;
-            --text-primary: #1c2d27;
-            --text-secondary: #5c7068;
-            --topbar-bg: #112820;
-            --table-head: #e2ebe6;
-            --border-color: #d1ded8;
-            --accent-green: #059669;
-            --card-hover: #fafcfb;
+            --bg-main: #f4f6f8; --card-bg: #ffffff; --text-color: #212529;
+            --primary: #198754; --primary-hover: #146c43; --border-color: #dee2e6;
         }
         [data-theme="dark"] {
-            --bg-color: #121816;
-            --card-bg: #1c2421;
-            --text-primary: #f0fdf4;
-            --text-secondary: #9ca3af;
-            --topbar-bg: #0b1210;
-            --table-head: #28332f;
-            --border-color: #2e3d37;
-            --accent-green: #10b981;
-            --card-hover: #222c29;
+            --bg-main: #121212; --card-bg: #1e1e1e; --text-color: #e0e0e0;
+            --primary: #20c997; --primary-hover: #1aa179; --border-color: #333333;
         }
-        body { 
-            background-color: var(--bg-color); 
-            color: var(--text-primary); 
-            transition: all 0.25s ease-in-out; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .navbar { background-color: var(--topbar-bg) !important; }
-        .card { 
-            background-color: var(--card-bg); 
-            border: 1px solid var(--border-color); 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); 
-            border-radius: 12px;
-        }
-        .stat-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-        }
-        .stat-title {
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-        }
-        .stat-number {
-            color: var(--text-primary) !important;
-            font-weight: 800;
-        }
-        .table { color: var(--text-primary); }
-        .table thead th { 
-            background-color: var(--table-head); 
-            color: var(--text-primary); 
-            font-size: 0.82rem;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid var(--border-color);
-        }
-        .table tbody tr {
-            transition: background-color 0.15s ease;
-        }
-        .table tbody tr:hover {
-            background-color: var(--card-hover);
-        }
-        .badge-out { background-color: #ef4444; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
-        .badge-low { background-color: #f59e0b; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
-        .badge-ok { background-color: #10b981; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
-
-        .filter-pill {
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: var(--text-secondary);
-            border-radius: 20px;
-            padding: 5px 15px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .filter-pill.active, .filter-pill:hover {
-            background: var(--accent-green);
-            color: white;
-            border-color: var(--accent-green);
-        }
-        .user-tag {
-            background-color: #059669;
-            color: #ffffff;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: inline-block;
-            font-size: 0.8rem;
-            min-width: 80px;
-            text-align: center;
-        }
+        body { background-color: var(--bg-main); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card { background-color: var(--card-bg); border-color: var(--border-color); }
+        .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 12px; }
     </style>
 </head>
-<body data-theme="light">
+<body>
 
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark px-4 py-2 shadow-sm">
-        <span class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2">
-            📦 Stock Book
-        </span>
-        <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
-            <button id="exportBtn" class="btn btn-outline-success btn-sm rounded-pill px-3 d-none fw-bold" onclick="exportCSV()">📥 Download CSV Report</button>
-            <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="toggleTheme()">🌓 Theme</button>
-            <span id="userInfo" class="badge bg-success bg-opacity-20 text-light border border-success border-opacity-25 px-3 py-2 fs-6"></span>
-            <button id="logoutBtn" class="btn btn-danger btn-sm d-none rounded-pill px-3" onclick="logout()">Logout</button>
-        </div>
-    </nav>
-
-    <div class="container-fluid px-4 my-4">
-
-        <!-- Login Card -->
-        <div id="loginSection" class="row justify-content-center my-5">
-            <div class="col-md-4">
-                <div class="card p-4 shadow-lg border-0">
-                    <h3 class="mb-4 text-center fw-bold">Inventory Access</h3>
-                    <form onsubmit="handleLogin(event)">
-                        <div class="mb-3">
-                            <label class="form-label font-semibold">Username</label>
-                            <input type="text" id="username" class="form-control form-control-lg fs-6" placeholder="master / worker1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label font-semibold">Password</label>
-                            <input type="password" id="password" class="form-control form-control-lg fs-6" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm">Sign In</button>
-                    </form>
+<div class="container py-4" id="loginSection">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow p-4 mt-5">
+                <h4 class="text-center mb-3">📦 Inventory Login</h4>
+                <div class="mb-3">
+                    <label>Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="master or worker1">
                 </div>
+                <div class="mb-3">
+                    <label>Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="admin123 or worker123">
+                </div>
+                <button class="btn btn-success w-100" onclick="handleLogin()">Login</button>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Main Dashboard App Section -->
-        <div id="appSection" class="d-none">
-
-            <!-- Summary KPI Stats -->
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3">
-                    <div class="card stat-card p-3 text-center">
-                        <span class="stat-title">TOTAL PRODUCTS</span>
-                        <h2 id="statTotal" class="stat-number my-1 fs-1">0</h2>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card stat-card p-3 text-center border-start border-4 border-success">
-                        <span class="stat-title text-success">IN STOCK</span>
-                        <h2 id="statInStock" class="stat-number text-success my-1 fs-1">0</h2>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card stat-card p-3 text-center border-start border-4 border-warning">
-                        <span class="stat-title text-warning">LOW STOCK (≤10)</span>
-                        <h2 id="statLow" class="stat-number text-warning my-1 fs-1">0</h2>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card stat-card p-3 text-center border-start border-4 border-danger">
-                        <span class="stat-title text-danger">OUT OF STOCK</span>
-                        <h2 id="statOut" class="stat-number text-danger my-1 fs-1">0</h2>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Analytics Row (Master Only) -->
-            <div id="analyticsRow" class="row g-3 mb-4 d-none">
-                <div class="col-md-6">
-                    <div class="card p-3 text-center shadow-sm">
-                        <h6 class="fw-bold text-secondary mb-3">Stock Distribution Health</h6>
-                        <div style="height: 200px;" class="d-flex justify-content-center">
-                            <canvas id="stockPieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card p-3 text-center shadow-sm">
-                        <h6 class="fw-bold text-danger mb-3">Critical Low Stock Warning</h6>
-                        <div style="height: 200px;">
-                            <canvas id="lowStockBarChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Controls & Filter Bar -->
-            <div class="card p-3 mb-4">
-                <div class="row g-3 align-items-center">
-                    <div class="col-md-4">
-                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search product or brand..." oninput="filterData()">
-                    </div>
-                    <div class="col-md-3">
-                        <select id="brandSelect" class="form-select fw-semibold" onchange="filterData()">
-                            <option value="ALL">ALL BRANDS</option>
-                        </select>
-                    </div>
-                    <div class="col-md-5 d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
-                        <span class="filter-pill active" onclick="setStatusFilter('ALL', this)">All</span>
-                        <span class="filter-pill" onclick="setStatusFilter('INSTOCK', this)">In Stock</span>
-                        <span class="filter-pill" onclick="setStatusFilter('LOW', this)">Low</span>
-                        <span class="filter-pill" onclick="setStatusFilter('OUT', this)">Out of Stock</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Inventory Data Table -->
-            <div class="card p-3 shadow-sm mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0 text-secondary">STOCK REGISTER</h6>
-                    <span id="recordCount" class="text-secondary fw-semibold small">Showing 0 products</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>BRAND</th>
-                                <th>DESCRIPTION</th>
-                                <th>RTT</th>
-                                <th>RIN</th>
-                                <th>RIT</th>
-                                <th>GE</th>
-                                <th>TOTAL</th>
-                                <th>ACTUAL STOCK</th>
-                                <th class="text-center">ACTIONS</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryBody"></tbody>
-                    </table>
-                </div>
-
-                <!-- Add New Product Form -->
-                <div class="border-top pt-3 mt-2">
-                    <h6 class="fw-bold text-success mb-3">+ Add New Product</h6>
-                    <form onsubmit="handleAddProduct(event)">
-                        <div class="row g-2 align-items-center">
-                            <div class="col-md-2">
-                                <input type="text" id="newBrand" class="form-control form-control-sm" placeholder="Brand" required>
-                            </div>
-                            <div class="col-md-3">
-                                <input type="text" id="newDesc" class="form-control form-control-sm" placeholder="Product description" required>
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <input type="number" id="newRtt" class="form-control form-control-sm" placeholder="RTT">
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <input type="number" id="newRin" class="form-control form-control-sm" placeholder="RIN">
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <input type="number" id="newRit" class="form-control form-control-sm" placeholder="RIT">
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <input type="number" id="newGe" class="form-control form-control-sm" placeholder="GE">
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <input type="number" id="newStock" class="form-control form-control-sm" placeholder="Stock" required>
-                            </div>
-                            <div class="col-md-2 text-end">
-                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">+ Add Product</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Realtime Master Audit Feed -->
-            <div id="masterAudit" class="card p-4 d-none border-0 shadow-sm">
-                <h6 class="fw-bold text-success mb-3 d-flex align-items-center gap-2">
-                    <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span> Live Worker Activity Tracker
-                </h6>
-                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                    <ul id="logList" class="list-group list-group-flush small"></ul>
-                </div>
-            </div>
-
+<div class="container-fluid px-4 py-3 d-none" id="appSection">
+    <!-- Navbar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Warehouse Inventory & Ledger Hub</h2>
+        <div>
+            <span class="badge bg-primary me-2" id="roleBadge"></span>
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()"><i class="bi bi-moon"></i></button>
+            <button class="btn btn-outline-danger btn-sm" onclick="handleLogout()">Logout</button>
         </div>
     </div>
 
-    <script>
-        let currentRole = null;
-        let products = [];
-        let statusFilter = 'ALL';
-        let pieChartObj = null;
-        let barChartObj = null;
+    <!-- Analytics (Master only) -->
+    <div class="row mb-4 master-only">
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm"><canvas id="stockDonut" style="max-height:220px;"></canvas></div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-3 shadow-sm"><canvas id="lowStockBar" style="max-height:220px;"></canvas></div>
+        </div>
+    </div>
 
-        function toggleTheme() {
-            const body = document.body;
-            body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
-        }
+    <!-- Action Bar -->
+    <div class="card p-3 mb-4 shadow-sm">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search description, HSN, Brand..." oninput="filterData()">
+            </div>
+            <div class="col-md-3">
+                <select id="brandFilter" class="form-select" onchange="filterData()">
+                    <option value="">All Brands</option>
+                </select>
+            </div>
+            <div class="col-md-5 text-end master-only">
+                <button class="btn btn-outline-success" onclick="exportCSV()"><i class="bi bi-download"></i> Export Master CSV</button>
+            </div>
+        </div>
+    </div>
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value
-                })
-            });
-            const data = await res.json();
-            if(res.ok) {
-                currentRole = data.role;
-                document.getElementById('loginSection').classList.add('d-none');
-                document.getElementById('appSection').classList.remove('d-none');
-                document.getElementById('logoutBtn').classList.remove('d-none');
-                document.getElementById('userInfo').innerText = `${data.username.toUpperCase()} (${data.role.toUpperCase()})`;
-                
-                if(currentRole === 'master') {
-                    document.getElementById('masterAudit').classList.remove('d-none');
-                    document.getElementById('analyticsRow').classList.remove('d-none');
-                    document.getElementById('exportBtn').classList.remove('d-none');
-                    setInterval(fetchLogs, 3000);
-                    fetchLogs();
-                }
-                loadProducts();
-            } else {
-                alert(data.error);
-            }
-        }
-
-        async function loadProducts() {
-            const res = await fetch('/api/products');
-            const data = await res.json();
-            products = data.products;
-            populateBrands();
-            filterData();
-            updateStats();
-            if(currentRole === 'master') renderCharts();
-        }
-
-        function populateBrands() {
-            const brands = [...new Set(products.map(p => p.brand))].sort();
-            const brandSelect = document.getElementById('brandSelect');
-            brandSelect.innerHTML = '<option value="ALL">ALL BRANDS</option>' + 
-                brands.map(b => `<option value="${b}">${b}</option>`).join('');
-        }
-
-        function setStatusFilter(status, el) {
-            statusFilter = status;
-            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-            el.classList.add('active');
-            filterData();
-        }
-
-        function renderTable(items) {
-            const tbody = document.getElementById('inventoryBody');
-            document.getElementById('recordCount').innerText = `Showing ${items.length} of ${products.length} products`;
-
-            if(items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No matching stock items found</td></tr>`;
-                return;
-            }
-
-            tbody.innerHTML = items.map(p => {
-                let badge = '<span class="badge-ok">IN STOCK</span>';
-                if(p.actual_stock === 0) badge = '<span class="badge-out">OUT</span>';
-                else if(p.actual_stock <= 10) badge = '<span class="badge-low">LOW</span>';
-
-                return `
+    <!-- Product Table -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <td><strong class="text-success">${p.brand}</strong></td>
-                        <td>${p.description} ${badge}</td>
-                        <td class="text-secondary">${p.rtt || 0}</td>
-                        <td class="text-secondary">${p.rin || 0}</td>
-                        <td class="text-secondary">${p.rit || 0}</td>
-                        <td class="text-secondary">${p.ge || 0}</td>
-                        <td class="fw-semibold">${p.total || 0}</td>
-                        <td><span class="fs-6 fw-bold">${p.actual_stock}</span></td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-danger px-2 py-1 fw-bold" onclick="adjust(${p.id}, 'issue')">- Issue</button>
-                                <button class="btn btn-outline-success px-2 py-1 fw-bold" onclick="adjust(${p.id}, 'receive')">+ Receive</button>
-                                ${currentRole === 'master' ? `<button class="btn btn-link text-danger text-decoration-none px-2" onclick="deleteProd(${p.id})">Delete</button>` : ''}
-                            </div>
-                        </td>
+                        <th>ID</th>
+                        <th>Description & HSN</th>
+                        <th>Brand</th>
+                        <th>Price/MRP</th>
+                        <th>Actual Stock</th>
+                        <th>Status</th>
+                        <th>Adjust Stock</th>
+                        <th>Audit Ledger</th>
                     </tr>
-                `;
-            }).join('');
+                </thead>
+                <tbody id="productTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ITEM LEDGER MODAL -->
+<div class="modal fade" id="ledgerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ledgerTitle">Product Ledger History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="productQuickDetails" class="alert alert-info mb-3"></div>
+                <h6>📅 Transaction Timeline</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Qty</th>
+                                <th>Prev Stock</th>
+                                <th>New Stock</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentRole = '';
+let allProducts = [];
+let ledgerModalObj;
+
+document.addEventListener('DOMContentLoaded', () => {
+    ledgerModalObj = new bootstrap.Modal(document.getElementById('ledgerModal'));
+});
+
+async function handleLogin() {
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+    const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: u, password: p})
+    });
+    if(res.ok) {
+        const data = await res.json();
+        currentRole = data.role;
+        document.getElementById('loginSection').classList.add('d-none');
+        document.getElementById('appSection').classList.remove('d-none');
+        document.getElementById('roleBadge').innerText = `${data.username} (${data.role.toUpperCase()})`;
+        
+        if(currentRole !== 'master') {
+            document.querySelectorAll('.master-only').forEach(el => el.classList.add('d-none'));
         }
+        fetchProducts();
+    } else {
+        alert('Invalid Login Credentials');
+    }
+}
 
-        async function handleAddProduct(e) {
-            e.preventDefault();
-            const payload = {
-                brand: document.getElementById('newBrand').value,
-                description: document.getElementById('newDesc').value,
-                rtt: parseInt(document.getElementById('newRtt').value) || 0,
-                rin: parseInt(document.getElementById('newRin').value) || 0,
-                rit: parseInt(document.getElementById('newRit').value) || 0,
-                ge: parseInt(document.getElementById('newGe').value) || 0,
-                actual_stock: parseInt(document.getElementById('newStock').value) || 0
-            };
+async function fetchProducts() {
+    const res = await fetch('/api/products');
+    allProducts = await res.json();
+    populateBrandFilter();
+    renderTable(allProducts);
+    if(currentRole === 'master') renderCharts();
+}
 
-            const res = await fetch('/api/products/add', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
+function renderTable(items) {
+    const tbody = document.getElementById('productTableBody');
+    tbody.innerHTML = items.map(p => `
+        <tr>
+            <td>${p.id}</td>
+            <td>
+                <strong>${p.description}</strong><br>
+                <small class="text-muted">HSN: ${p.hsn_code || 'N/A'} | Expiry: ${p.expiry_date || 'N/A'}</small>
+            </td>
+            <td>${p.brand}</td>
+            <td>₹${p.price} <br><small class="text-muted">MRP: ₹${p.mrp}</small></td>
+            <td><h5 class="mb-0 text-${p.actual_stock > 10 ? 'success' : (p.actual_stock > 0 ? 'warning' : 'danger')}">${p.actual_stock}</h5></td>
+            <td><span class="badge ${p.status === 'Completed' ? 'bg-success' : 'bg-warning'} status-badge">${p.status}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger me-1" onclick="adjust(${p.id}, -1)">- Issue</button>
+                <button class="btn btn-sm btn-outline-success" onclick="adjust(${p.id}, 1)">+ Receive</button>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-info text-white" onclick="viewLedger(${p.id})">📖 View History</button>
+            </td>
+        </tr>
+    `).join('');
+}
 
-            if(res.ok) {
-                document.getElementById('newBrand').value = '';
-                document.getElementById('newDesc').value = '';
-                document.getElementById('newRtt').value = '';
-                document.getElementById('newRin').value = '';
-                document.getElementById('newRit').value = '';
-                document.getElementById('newGe').value = '';
-                document.getElementById('newStock').value = '';
-                loadProducts();
-            } else {
-                alert((await res.json()).error || "Error adding product");
-            }
-        }
+async function adjust(id, change) {
+    const qty = prompt(`Enter quantity to ${change > 0 ? 'Receive (+)' : 'Issue (-)'}:`, "1");
+    if(!qty || isNaN(qty) || qty <= 0) return;
+    
+    const res = await fetch('/api/products/adjust', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: id, change: parseInt(qty) * change})
+    });
+    if(res.ok) fetchProducts();
+}
 
-        async function adjust(id, type) {
-            const qty = prompt(`Enter quantity to ${type.toUpperCase()}:`, "1");
-            if(!qty || isNaN(qty) || parseInt(qty) <= 0) return;
+async function viewLedger(id) {
+    const res = await fetch(`/api/products/${id}/ledger`);
+    const data = await res.json();
+    const p = data.product;
+    
+    document.getElementById('ledgerTitle').innerText = `Ledger: ${p.description}`;
+    document.getElementById('productQuickDetails').innerHTML = `
+        <strong>Brand:</strong> ${p.brand} | <strong>Current Stock:</strong> ${p.actual_stock} | 
+        <strong>Opening Stock:</strong> ${p.opening_stock} | <strong>Damage:</strong> ${p.damage}
+    `;
+    
+    const tbody = document.getElementById('ledgerTableBody');
+    if(data.ledger.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No historical transactions logged yet.</td></tr>`;
+    } else {
+        tbody.innerHTML = data.ledger.map(l => `
+            <tr>
+                <td>${l.timestamp}</td>
+                <td><span class="badge bg-secondary">${l.username}</span></td>
+                <td><span class="badge bg-${l.action === 'RECEIVE' ? 'success' : 'danger'}">${l.action}</span></td>
+                <td>${l.quantity}</td>
+                <td>${l.prev_stock}</td>
+                <td><strong>${l.new_stock}</strong></td>
+                <td><small>${l.details || ''}</small></td>
+            </tr>
+        `).join('');
+    }
+    ledgerModalObj.show();
+}
 
-            const res = await fetch('/api/products/adjust', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({product_id: id, amount: parseInt(qty), type: type})
-            });
+function filterData() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const brand = document.getElementById('brandFilter').value;
+    const filtered = allProducts.filter(p => {
+        const matchesSearch = p.description.toLowerCase().includes(query) || (p.hsn_code && p.hsn_code.toLowerCase().includes(query)) || p.brand.toLowerCase().includes(query);
+        const matchesBrand = brand === '' || p.brand === brand;
+        return matchesSearch && matchesBrand;
+    });
+    renderTable(filtered);
+}
 
-            if(res.ok) loadProducts();
-            else alert((await res.json()).error);
-        }
+function populateBrandFilter() {
+    const brands = [...new Set(allProducts.map(p => p.brand))].filter(Boolean);
+    const select = document.getElementById('brandFilter');
+    select.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+}
 
-        async function deleteProd(id) {
-            if(!confirm("Are you sure you want to delete this product?")) return;
-            const res = await fetch(`/api/products/delete/${id}`, {method: 'DELETE'});
-            if(res.ok) loadProducts();
-            else alert("Error deleting product");
-        }
+function exportCSV() {
+    window.location.href = '/api/export/csv';
+}
 
-        async function fetchLogs() {
-            const res = await fetch('/api/activity');
-            const data = await res.json();
-            document.getElementById('logList').innerHTML = data.logs.map(l => `
-                <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-10">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="user-tag">${l.username}</span>
-                        <strong class="text-uppercase">${l.action}:</strong> 
-                        <span class="text-secondary">${l.details}</span>
-                    </div>
-                    <small class="text-muted fw-semibold">${l.timestamp}</small>
-                </li>
-            `).join('');
-        }
+function toggleTheme() {
+    const current = document.body.getAttribute('data-theme');
+    document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
 
-        function filterData() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const brand = document.getElementById('brandSelect').value;
-
-            const filtered = products.filter(p => {
-                const matchesSearch = p.brand.toLowerCase().includes(search) || p.description.toLowerCase().includes(search);
-                const matchesBrand = (brand === 'ALL') || (p.brand === brand);
-                
-                let matchesStatus = true;
-                if(statusFilter === 'INSTOCK') matchesStatus = p.actual_stock > 10;
-                else if(statusFilter === 'LOW') matchesStatus = p.actual_stock > 0 && p.actual_stock <= 10;
-                else if(statusFilter === 'OUT') matchesStatus = p.actual_stock === 0;
-
-                return matchesSearch && matchesBrand && matchesStatus;
-            });
-
-            renderTable(filtered);
-        }
-
-        function updateStats() {
-            document.getElementById('statTotal').innerText = products.length;
-            document.getElementById('statInStock').innerText = products.filter(p => p.actual_stock > 10).length;
-            document.getElementById('statLow').innerText = products.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
-            document.getElementById('statOut').innerText = products.filter(p => p.actual_stock === 0).length;
-        }
-
-        function renderCharts() {
-            const inStockCount = products.filter(p => p.actual_stock > 10).length;
-            const lowCount = products.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
-            const outCount = products.filter(p => p.actual_stock === 0).length;
-
-            if(pieChartObj) pieChartObj.destroy();
-            const ctxPie = document.getElementById('stockPieChart').getContext('2d');
-            pieChartObj = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: ['In Stock', 'Low Stock', 'Out of Stock'],
-                    datasets: [{
-                        data: [inStockCount, lowCount, outCount],
-                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            const criticalItems = [...products]
-                .sort((a,b) => a.actual_stock - b.actual_stock)
-                .slice(0, 5);
-            
-            if(barChartObj) barChartObj.destroy();
-            const ctxBar = document.getElementById('lowStockBarChart').getContext('2d');
-            barChartObj = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: criticalItems.map(p => p.description.length > 18 ? p.description.substring(0, 15) + '...' : p.description),
-                    datasets: [{
-                        label: 'Stock Quantity',
-                        data: criticalItems.map(p => p.actual_stock),
-                        backgroundColor: criticalItems.map(p => p.actual_stock === 0 ? '#ef4444' : '#f59e0b'),
-                        minBarLength: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { 
-                        y: { 
-                            beginAtZero: true,
-                            suggestedMax: 10
-                        } 
-                    }
-                }
-            });
-        }
-
-        // Direct authenticated blob download for CSV
-        async function exportCSV() {
-            try {
-                const res = await fetch('/api/export/csv');
-                if(!res.ok) {
-                    const err = await res.json();
-                    alert(err.error || "Export failed");
-                    return;
-                }
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'Stock_Report.csv';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } catch (e) {
-                alert("Error downloading CSV report");
-            }
-        }
-
-        async function logout() {
-            await fetch('/api/logout', {method: 'POST'});
-            location.reload();
-        }
-    </script>
+function handleLogout() {
+    fetch('/api/logout', {method: 'POST'}).then(() => location.reload());
+}
+</script>
 </body>
 </html>
