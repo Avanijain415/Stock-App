@@ -1,7 +1,9 @@
 import os
+import csv
 import sqlite3
+from io import StringIO
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -32,7 +34,7 @@ def auto_import_excel():
         last_brand = ""
         row_count = 0
         
-        for row in sheet.iter_rows(min_row=2, values_only=True): # Start reading rows
+        for row in sheet.iter_rows(min_row=2, values_only=True):
             if not row or len(row) < 2:
                 continue
             
@@ -120,7 +122,6 @@ def init_db():
         
     conn.commit()
 
-    # Always check if products need to be imported
     cursor.execute("SELECT COUNT(*) FROM products")
     count = cursor.fetchone()[0]
     conn.close()
@@ -173,13 +174,15 @@ def login():
     if user and check_password_hash(user[0], password):
         session['username'] = username
         session['role'] = user[1]
-        log_action(username, 'LOGIN', 'Logged into app')
+        log_action(username, 'LOGIN', 'Logged into dashboard')
         return jsonify({'status': 'success', 'username': username, 'role': user[1]})
     
     return jsonify({'error': 'Invalid credentials'}), 400
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
+    if 'username' in session:
+        log_action(session['username'], 'LOGOUT', 'Logged out of app')
     session.clear()
     return jsonify({'status': 'success'})
 
@@ -193,6 +196,34 @@ def get_products():
     products = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'products': products, 'user_role': session.get('role')})
+
+@app.route('/api/products/add', methods=['POST'])
+@login_required
+def add_product():
+    data = request.json
+    brand = data.get('brand', '').upper().strip()
+    description = data.get('description', '').strip()
+    actual_stock = int(data.get('actual_stock', 0))
+    rtt = int(data.get('rtt', 0))
+    rin = int(data.get('rin', 0))
+    rit = int(data.get('rit', 0))
+    ge = int(data.get('ge', 0))
+    total = rtt + rin + rit + ge
+
+    if not brand or not description:
+        return jsonify({'error': 'Brand and Description are required'}), 400
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
+    conn.commit()
+    conn.close()
+    
+    log_action(session['username'], 'ADD_PRODUCT', f"Added product '{description}' under brand '{brand}' with stock {actual_stock}")
+    return jsonify({'status': 'success'})
 
 @app.route('/api/products/adjust', methods=['POST'])
 @login_required
@@ -221,7 +252,7 @@ def adjust_stock():
     conn.commit()
     conn.close()
     
-    log_action(session['username'], action_type.upper(), f"{action_type.capitalize()}d {amount} units of {prod[0]} - {prod[1]}")
+    log_action(session['username'], action_type.upper(), f"{action_type.capitalize()}d {amount} units of {prod[0]} - {prod[1]} (New Stock: {new_stock})")
     return jsonify({'status': 'success', 'new_stock': new_stock})
 
 @app.route('/api/products/delete/<int:prod_id>', methods=['DELETE'])
@@ -229,10 +260,13 @@ def adjust_stock():
 def delete_product(prod_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM products WHERE id = ?", (prod_id,))
-    conn.commit()
+    cursor.execute("SELECT brand, description FROM products WHERE id = ?", (prod_id,))
+    prod = cursor.fetchone()
+    if prod:
+        cursor.execute("DELETE FROM products WHERE id = ?", (prod_id,))
+        conn.commit()
+        log_action(session['username'], 'DELETE', f"Deleted product '{prod[1]}' under brand '{prod[0]}'")
     conn.close()
-    log_action(session['username'], 'DELETE', f"Deleted product ID {prod_id}")
     return jsonify({'status': 'success'})
 
 @app.route('/api/activity', methods=['GET'])
@@ -241,16 +275,34 @@ def get_activity():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 30")
+    cursor.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 40")
     logs = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'logs': logs})
 
-# Secret route to manually trigger reload if ever needed
+@app.route('/api/export/csv', methods=['GET'])
+@master_required
+def export_csv():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT brand, description, rtt, rin, rit, ge, total, actual_stock FROM products ORDER BY brand, description")
+    rows = cursor.fetchall()
+    conn.close()
+
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['BRAND', 'DESCRIPTION', 'RTT', 'RIN', 'RIT', 'GE', 'TOTAL', 'ACTUAL STOCK'])
+    cw.writerows(rows)
+
+    output = Response(si.getvalue(), mimetype='text/csv')
+    output.headers["Content-Disposition"] = "attachment; filename=Stock_Report.csv"
+    return output
+
 @app.route('/api/admin/reload', methods=['GET'])
+@master_required
 def force_reload():
     auto_import_excel()
-    return jsonify({'status': 'Excel data reloaded!'})
+    return jsonify({'status': 'Excel data reloaded successfully!'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
