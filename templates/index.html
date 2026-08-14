@@ -94,6 +94,17 @@
             color: white;
             border-color: var(--accent-green);
         }
+        .user-tag {
+            background-color: #059669;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 0.8rem;
+            min-width: 80px;
+            text-align: center;
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -207,14 +218,47 @@
                         <tbody id="inventoryBody"></tbody>
                     </table>
                 </div>
+
+                <!-- Add New Product Form (Reference UI Style) -->
+                <div class="border-top pt-3 mt-2">
+                    <h6 class="fw-bold text-success mb-3">+ Add New Product</h6>
+                    <form onsubmit="handleAddProduct(event)">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-2">
+                                <input type="text" id="newBrand" class="form-control form-control-sm" placeholder="Brand" required>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" id="newDesc" class="form-control form-control-sm" placeholder="Product description" required>
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <input type="number" id="newRtt" class="form-control form-control-sm" placeholder="RTT" value="0">
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <input type="number" id="newRin" class="form-control form-control-sm" placeholder="RIN" value="0">
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <input type="number" id="newRit" class="form-control form-control-sm" placeholder="RIT" value="0">
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <input type="number" id="newGe" class="form-control form-control-sm" placeholder="GE" value="0">
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <input type="number" id="newStock" class="form-control form-control-sm" placeholder="Stock" value="0" required>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">+ Add Product</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Realtime Master Audit Feed -->
             <div id="masterAudit" class="card p-4 d-none border-0 shadow-sm">
                 <h6 class="fw-bold text-success mb-3 d-flex align-items-center gap-2">
-                    <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span> Live Worker Activity Log
+                    <span class="spinner-grow spinner-grow-sm text-danger" role="status"></span> Live Worker Activity Tracker
                 </h6>
-                <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                     <ul id="logList" class="list-group list-group-flush small"></ul>
                 </div>
             </div>
@@ -253,6 +297,7 @@
                 if(currentRole === 'master') {
                     document.getElementById('masterAudit').classList.remove('d-none');
                     setInterval(fetchLogs, 3000);
+                    fetchLogs();
                 }
                 loadProducts();
             } else {
@@ -319,6 +364,38 @@
             }).join('');
         }
 
+        async function handleAddProduct(e) {
+            e.preventDefault();
+            const payload = {
+                brand: document.getElementById('newBrand').value,
+                description: document.getElementById('newDesc').value,
+                rtt: parseInt(document.getElementById('newRtt').value || 0),
+                rin: parseInt(document.getElementById('newRin').value || 0),
+                rit: parseInt(document.getElementById('newRit').value || 0),
+                ge: parseInt(document.getElementById('newGe').value || 0),
+                actual_stock: parseInt(document.getElementById('newStock').value || 0)
+            };
+
+            const res = await fetch('/api/products/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            if(res.ok) {
+                document.getElementById('newBrand').value = '';
+                document.getElementById('newDesc').value = '';
+                document.getElementById('newRtt').value = '0';
+                document.getElementById('newRin').value = '0';
+                document.getElementById('newRit').value = '0';
+                document.getElementById('newGe').value = '0';
+                document.getElementById('newStock').value = '0';
+                loadProducts();
+            } else {
+                alert((await res.json()).error || "Error adding product");
+            }
+        }
+
         async function adjust(id, type) {
             const qty = prompt(`Enter quantity to ${type.toUpperCase()}:`, "1");
             if(!qty || isNaN(qty) || parseInt(qty) <= 0) return;
@@ -345,11 +422,12 @@
             const data = await res.json();
             document.getElementById('logList').innerHTML = data.logs.map(l => `
                 <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center py-2 border-bottom border-secondary border-opacity-10">
-                    <div>
-                        <span class="badge bg-success bg-opacity-20 text-success me-2">${l.username}</span>
-                        <strong>${l.action}</strong> - <span class="text-secondary">${l.details}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="user-tag">${l.username}</span>
+                        <strong class="text-uppercase">${l.action}:</strong> 
+                        <span class="text-secondary">${l.details}</span>
                     </div>
-                    <small class="text-muted">${l.timestamp}</small>
+                    <small class="text-muted fw-semibold">${l.timestamp}</small>
                 </li>
             `).join('');
         }
