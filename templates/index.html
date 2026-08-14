@@ -504,30 +504,57 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            const criticalItems = [...products].filter(p => p.actual_stock <= 10).sort((a,b) => a.actual_stock - b.actual_stock).slice(0, 5);
+            const criticalItems = [...products]
+                .sort((a,b) => a.actual_stock - b.actual_stock)
+                .slice(0, 5);
             
             if(barChartObj) barChartObj.destroy();
             const ctxBar = document.getElementById('lowStockBarChart').getContext('2d');
             barChartObj = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
-                    labels: criticalItems.map(p => p.description.substring(0, 15) + '...'),
+                    labels: criticalItems.map(p => p.description.length > 18 ? p.description.substring(0, 15) + '...' : p.description),
                     datasets: [{
-                        label: 'Stock Level',
+                        label: 'Stock Quantity',
                         data: criticalItems.map(p => p.actual_stock),
-                        backgroundColor: '#f59e0b'
+                        backgroundColor: criticalItems.map(p => p.actual_stock === 0 ? '#ef4444' : '#f59e0b'),
+                        minBarLength: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true } }
+                    scales: { 
+                        y: { 
+                            beginAtZero: true,
+                            suggestedMax: 10
+                        } 
+                    }
                 }
             });
         }
 
-        function exportCSV() {
-            window.location.href = '/api/export/csv';
+        // Direct authenticated blob download for CSV
+        async function exportCSV() {
+            try {
+                const res = await fetch('/api/export/csv');
+                if(!res.ok) {
+                    const err = await res.json();
+                    alert(err.error || "Export failed");
+                    return;
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Stock_Report.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (e) {
+                alert("Error downloading CSV report");
+            }
         }
 
         async function logout() {
