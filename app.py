@@ -8,42 +8,6 @@ app = Flask(__name__)
 app.secret_key = 'stock-secret-key-change-this'
 DB_FILE = 'inventory.db'
 
-def auto_migrate_excel():
-    excel_file = 'NEW APRIL STOCK SHEET 2026.xlsx'
-    
-    if not os.path.exists(excel_file):
-        files = [f for f in os.listdir('.') if f.endswith('.xlsx')]
-        if files:
-            excel_file = files[0]
-        else:
-            return
-
-    try:
-        import pandas as pd
-        xls = pd.ExcelFile(excel_file)
-        sheet = 'Sheet2' if 'Sheet2' in xls.sheet_names else xls.sheet_names[0]
-        
-        df = pd.read_excel(excel_file, sheet_name=sheet, skiprows=1)
-        df = df.iloc[:, :8]
-        df.columns = ['brand', 'description', 'rtt', 'rin', 'rit', 'ge', 'total', 'actual_stock']
-        
-        df['brand'] = df['brand'].ffill()
-        df = df.dropna(subset=['description'])
-        
-        num_cols = ['rtt', 'rin', 'rit', 'ge', 'total', 'actual_stock']
-        for col in num_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM products")
-        conn.commit()
-        
-        df.to_sql('products', conn, if_exists='append', index=False)
-        conn.close()
-    except Exception as e:
-        print(f"Migration error: {e}")
-
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -93,7 +57,6 @@ def init_db():
         
     conn.commit()
     conn.close()
-    auto_migrate_excel()
 
 def login_required(f):
     @wraps(f)
@@ -160,6 +123,31 @@ def get_products():
     products = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'products': products, 'user_role': session.get('role')})
+
+@app.route('/api/products/add', methods=['POST'])
+@login_required
+def add_product():
+    data = request.json
+    brand = data.get('brand', '').upper()
+    description = data.get('description', '')
+    actual_stock = int(data.get('actual_stock', 0))
+    rtt = int(data.get('rtt', 0))
+    rin = int(data.get('rin', 0))
+    rit = int(data.get('rit', 0))
+    ge = int(data.get('ge', 0))
+    total = rtt + rin + rit + ge
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO products (brand, description, rtt, rin, rit, ge, total, actual_stock)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (brand, description, rtt, rin, rit, ge, total, actual_stock))
+    conn.commit()
+    conn.close()
+    
+    log_action(session['username'], 'ADD_PRODUCT', f"Added {brand} - {description}")
+    return jsonify({'status': 'success'})
 
 @app.route('/api/products/adjust', methods=['POST'])
 @login_required
