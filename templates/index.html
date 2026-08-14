@@ -6,6 +6,8 @@
     <title>Stock Book Management</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js for Visual Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-color: #f1f5f3;
@@ -77,7 +79,6 @@
         .badge-low { background-color: #f59e0b; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
         .badge-ok { background-color: #10b981; color: white; font-weight: 600; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; }
 
-        /* Filter Pills */
         .filter-pill {
             border: 1px solid var(--border-color);
             background: var(--card-bg);
@@ -114,7 +115,8 @@
         <span class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2">
             📦 Stock Book
         </span>
-        <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="ms-auto d-flex align-items-center gap-2 flex-wrap">
+            <button id="exportBtn" class="btn btn-outline-success btn-sm rounded-pill px-3 d-none fw-bold" onclick="exportCSV()">📥 Download CSV Report</button>
             <button class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="toggleTheme()">🌓 Theme</button>
             <span id="userInfo" class="badge bg-success bg-opacity-20 text-light border border-success border-opacity-25 px-3 py-2 fs-6"></span>
             <button id="logoutBtn" class="btn btn-danger btn-sm d-none rounded-pill px-3" onclick="logout()">Logout</button>
@@ -174,6 +176,26 @@
                 </div>
             </div>
 
+            <!-- Charts Analytics Row (Master Only) -->
+            <div id="analyticsRow" class="row g-3 mb-4 d-none">
+                <div class="col-md-6">
+                    <div class="card p-3 text-center shadow-sm">
+                        <h6 class="fw-bold text-secondary mb-3">Stock Distribution Health</h6>
+                        <div style="height: 200px;" class="d-flex justify-content-center">
+                            <canvas id="stockPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3 text-center shadow-sm">
+                        <h6 class="fw-bold text-danger mb-3">Critical Low Stock Warning</h6>
+                        <div style="height: 200px;">
+                            <canvas id="lowStockBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Controls & Filter Bar -->
             <div class="card p-3 mb-4">
                 <div class="row g-3 align-items-center">
@@ -219,7 +241,7 @@
                     </table>
                 </div>
 
-                <!-- Add New Product Form (Reference UI Style) -->
+                <!-- Add New Product Form -->
                 <div class="border-top pt-3 mt-2">
                     <h6 class="fw-bold text-success mb-3">+ Add New Product</h6>
                     <form onsubmit="handleAddProduct(event)">
@@ -231,19 +253,19 @@
                                 <input type="text" id="newDesc" class="form-control form-control-sm" placeholder="Product description" required>
                             </div>
                             <div class="col-6 col-md-1">
-                                <input type="number" id="newRtt" class="form-control form-control-sm" placeholder="RTT" value="0">
+                                <input type="number" id="newRtt" class="form-control form-control-sm" placeholder="RTT">
                             </div>
                             <div class="col-6 col-md-1">
-                                <input type="number" id="newRin" class="form-control form-control-sm" placeholder="RIN" value="0">
+                                <input type="number" id="newRin" class="form-control form-control-sm" placeholder="RIN">
                             </div>
                             <div class="col-6 col-md-1">
-                                <input type="number" id="newRit" class="form-control form-control-sm" placeholder="RIT" value="0">
+                                <input type="number" id="newRit" class="form-control form-control-sm" placeholder="RIT">
                             </div>
                             <div class="col-6 col-md-1">
-                                <input type="number" id="newGe" class="form-control form-control-sm" placeholder="GE" value="0">
+                                <input type="number" id="newGe" class="form-control form-control-sm" placeholder="GE">
                             </div>
                             <div class="col-6 col-md-1">
-                                <input type="number" id="newStock" class="form-control form-control-sm" placeholder="Stock" value="0" required>
+                                <input type="number" id="newStock" class="form-control form-control-sm" placeholder="Stock" required>
                             </div>
                             <div class="col-md-2 text-end">
                                 <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">+ Add Product</button>
@@ -270,6 +292,8 @@
         let currentRole = null;
         let products = [];
         let statusFilter = 'ALL';
+        let pieChartObj = null;
+        let barChartObj = null;
 
         function toggleTheme() {
             const body = document.body;
@@ -296,6 +320,8 @@
                 
                 if(currentRole === 'master') {
                     document.getElementById('masterAudit').classList.remove('d-none');
+                    document.getElementById('analyticsRow').classList.remove('d-none');
+                    document.getElementById('exportBtn').classList.remove('d-none');
                     setInterval(fetchLogs, 3000);
                     fetchLogs();
                 }
@@ -312,6 +338,7 @@
             populateBrands();
             filterData();
             updateStats();
+            if(currentRole === 'master') renderCharts();
         }
 
         function populateBrands() {
@@ -369,11 +396,11 @@
             const payload = {
                 brand: document.getElementById('newBrand').value,
                 description: document.getElementById('newDesc').value,
-                rtt: parseInt(document.getElementById('newRtt').value || 0),
-                rin: parseInt(document.getElementById('newRin').value || 0),
-                rit: parseInt(document.getElementById('newRit').value || 0),
-                ge: parseInt(document.getElementById('newGe').value || 0),
-                actual_stock: parseInt(document.getElementById('newStock').value || 0)
+                rtt: parseInt(document.getElementById('newRtt').value) || 0,
+                rin: parseInt(document.getElementById('newRin').value) || 0,
+                rit: parseInt(document.getElementById('newRit').value) || 0,
+                ge: parseInt(document.getElementById('newGe').value) || 0,
+                actual_stock: parseInt(document.getElementById('newStock').value) || 0
             };
 
             const res = await fetch('/api/products/add', {
@@ -385,11 +412,11 @@
             if(res.ok) {
                 document.getElementById('newBrand').value = '';
                 document.getElementById('newDesc').value = '';
-                document.getElementById('newRtt').value = '0';
-                document.getElementById('newRin').value = '0';
-                document.getElementById('newRit').value = '0';
-                document.getElementById('newGe').value = '0';
-                document.getElementById('newStock').value = '0';
+                document.getElementById('newRtt').value = '';
+                document.getElementById('newRin').value = '';
+                document.getElementById('newRit').value = '';
+                document.getElementById('newGe').value = '';
+                document.getElementById('newStock').value = '';
                 loadProducts();
             } else {
                 alert((await res.json()).error || "Error adding product");
@@ -456,6 +483,51 @@
             document.getElementById('statInStock').innerText = products.filter(p => p.actual_stock > 10).length;
             document.getElementById('statLow').innerText = products.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
             document.getElementById('statOut').innerText = products.filter(p => p.actual_stock === 0).length;
+        }
+
+        function renderCharts() {
+            const inStockCount = products.filter(p => p.actual_stock > 10).length;
+            const lowCount = products.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
+            const outCount = products.filter(p => p.actual_stock === 0).length;
+
+            if(pieChartObj) pieChartObj.destroy();
+            const ctxPie = document.getElementById('stockPieChart').getContext('2d');
+            pieChartObj = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['In Stock', 'Low Stock', 'Out of Stock'],
+                    datasets: [{
+                        data: [inStockCount, lowCount, outCount],
+                        backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const criticalItems = [...products].filter(p => p.actual_stock <= 10).sort((a,b) => a.actual_stock - b.actual_stock).slice(0, 5);
+            
+            if(barChartObj) barChartObj.destroy();
+            const ctxBar = document.getElementById('lowStockBarChart').getContext('2d');
+            barChartObj = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: criticalItems.map(p => p.description.substring(0, 15) + '...'),
+                    datasets: [{
+                        label: 'Stock Level',
+                        data: criticalItems.map(p => p.actual_stock),
+                        backgroundColor: '#f59e0b'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function exportCSV() {
+            window.location.href = '/api/export/csv';
         }
 
         async function logout() {
