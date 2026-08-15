@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Warehouse & Global Margin Command Hub</title>
-    <!-- Modern Bootstrap 5, Icons & Fonts -->
+    <!-- Bootstrap 5, Icons & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,6 @@
     <style>
         :root {
             --primary: #2563eb;
-            --primary-light: #eff6ff;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
@@ -34,6 +33,10 @@
         .quick-qty-btn { border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
         .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: #f8fafc; }
         .modal-content { border-radius: 16px; border: none; }
+        @media print {
+            .no-print { display: none !important; }
+            .card { border: none !important; box-shadow: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -45,19 +48,26 @@
             <div class="card p-4 shadow-lg text-center">
                 <div class="mb-3">
                     <span class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-block">
-                        <i class="bi bi-boxes fs-1"></i>
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
                     </span>
                 </div>
-                <h4 class="fw-bold mb-1">Warehouse Portal</h4>
+                <h4 class="fw-bold mb-1">Warehouse Hub Portal</h4>
                 <p class="text-muted small mb-4">Stock Ledger, Operations & Margin Tracking</p>
+                
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
-                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
+                    <input type="text" id="username" class="form-control" placeholder="Enter username (master / worker1)">
                 </div>
-                <div class="mb-4 text-start">
+                
+                <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="admin123 / worker123">
+                    <input type="password" id="password" class="form-control" placeholder="••••••••">
                 </div>
+
+                <div class="d-flex justify-content-end mb-4">
+                    <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-semibold" onclick="openForgotModal()">Forgot Password?</a>
+                </div>
+
                 <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In to Dashboard</button>
             </div>
         </div>
@@ -67,7 +77,7 @@
 <!-- 2. MAIN APPLICATION -->
 <div class="d-none" id="appSection">
     <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom px-4 py-2 sticky-top shadow-sm">
+    <nav class="navbar navbar-dark navbar-custom px-4 py-2 sticky-top shadow-sm no-print">
         <div class="d-flex align-items-center">
             <i class="bi bi-box-seam text-primary fs-4 me-2"></i>
             <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
@@ -82,8 +92,8 @@
     </nav>
 
     <div class="container-fluid px-4 py-4">
-        <!-- Tab Navigation Pills -->
-        <ul class="nav nav-pills mb-4 gap-2" id="mainPills">
+        <!-- Navigation Pills -->
+        <ul class="nav nav-pills mb-4 gap-2 no-print" id="mainPills">
             <li class="nav-item master-only">
                 <a class="nav-link active" data-bs-toggle="pill" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Overview</a>
             </li>
@@ -94,7 +104,7 @@
                 <a class="nav-link" data-bs-toggle="pill" href="#ledgerTab"><i class="bi bi-journal-check me-1"></i> Item Ledger & History</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaces()"><i class="bi bi-globe2 me-1"></i> Global Country Pricing</a>
+                <a class="nav-link" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaceData()"><i class="bi bi-globe2 me-1"></i> Global Country Pricing</a>
             </li>
         </ul>
 
@@ -102,7 +112,6 @@
             
             <!-- TAB 1: EXECUTIVE DASHBOARD (Master Only) -->
             <div class="tab-pane fade show active master-only" id="dashboardTab">
-                <!-- Master KPI Cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary);">
@@ -115,26 +124,25 @@
                         <div class="card p-3 stat-card" style="border-left: 4px solid var(--success);">
                             <span class="text-muted small fw-bold">TOTAL WAREHOUSE UNITS</span>
                             <h3 class="fw-bold my-1 text-success" id="statTotalQty">0</h3>
-                            <span class="text-muted small">Actual Available Physical Units</span>
+                            <span class="text-muted small">Actual Physical Units Available</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger);">
                             <span class="text-muted small fw-bold">LOW STOCK ALERTS</span>
                             <h3 class="fw-bold my-1 text-danger" id="statLowStock">0</h3>
-                            <span class="text-danger small">Requires Immediate Replenishment</span>
+                            <span class="text-danger small">Stock &le; 10 units (Replenish)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
                         <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning);">
                             <span class="text-muted small fw-bold">GLOBAL MARKET SKUs</span>
                             <h3 class="fw-bold my-1 text-warning" id="statGlobalSkus">0</h3>
-                            <span class="text-muted small">Across 5 International Marketplaces</span>
+                            <span class="text-muted small">Across 5 International Regions</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Charts & Live Worker Stream -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
@@ -158,15 +166,14 @@
                 </div>
             </div>
 
-            <!-- TAB 2: LIVE STOCK INVENTORY (Worker & Master Operations) -->
+            <!-- TAB 2: LIVE STOCK INVENTORY -->
             <div class="tab-pane fade" id="inventoryTab">
-                
-                <!-- Worker Daily Shift Summary Bar -->
-                <div class="card p-3 mb-3 bg-white border-primary border-opacity-25" id="workerShiftCard">
+                <!-- Shift Summary Bar -->
+                <div class="card p-3 mb-3 bg-white border-primary border-opacity-25 no-print" id="workerShiftCard">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div>
-                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Daily Shift Summary</h6>
-                            <span class="text-muted small">Real-time tracker for today's physical warehouse movements</span>
+                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Daily Shift Summary (IST)</h6>
+                            <span class="text-muted small">Real-time physical inventory operations logged today</span>
                         </div>
                         <div class="d-flex gap-3">
                             <div class="px-3 py-1 bg-success-subtle text-success rounded-3 text-center">
@@ -185,13 +192,13 @@
                     </div>
                 </div>
 
-                <!-- Search, Filter Pills & Export Bar -->
-                <div class="card p-3 mb-3">
+                <!-- Search, Filter Pills & Action Tools -->
+                <div class="card p-3 mb-3 no-print">
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-md-5">
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                                <input type="text" id="invSearch" class="form-control border-start-0" placeholder="Type Description, HSN Code, Brand to search..." oninput="filterInventory()">
+                                <input type="text" id="invSearch" class="form-control border-start-0" placeholder="Type SKU Name, HSN Code, Brand to search..." oninput="filterInventory()">
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -199,12 +206,15 @@
                                 <option value="">All Brands</option>
                             </select>
                         </div>
-                        <div class="col-md-4 text-end master-only">
-                            <a href="/api/export/csv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Master CSV</a>
+                        <div class="col-md-4 text-end d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Sheet</button>
+                            <a href="/api/export/warehouse-csv" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
+                            <!-- Add Product Button: Available to BOTH Worker and Master -->
+                            <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="bi bi-plus-lg"></i> Add New SKU</button>
                         </div>
                     </div>
 
-                    <!-- Quick Status Filter Pills -->
+                    <!-- Status Filter Pills -->
                     <div class="d-flex flex-wrap gap-2">
                         <button class="btn btn-sm btn-primary filter-btn" onclick="setStatusFilter('ALL', this)">All Items (<span id="countAll">0</span>)</button>
                         <button class="btn btn-sm btn-outline-success filter-btn" onclick="setStatusFilter('IN_STOCK', this)">In Stock (<span id="countInStock">0</span>)</button>
@@ -214,10 +224,9 @@
                     </div>
                 </div>
 
-                <!-- Main Inventory Table -->
                 <div class="card">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0" id="inventoryTable">
                             <thead>
                                 <tr>
                                     <th style="width: 60px;">ID</th>
@@ -225,9 +234,10 @@
                                     <th>Brand / Origin</th>
                                     <th>Price / MRP</th>
                                     <th class="text-center">Actual Stock</th>
-                                    <th>Task Status</th>
-                                    <th class="text-center" style="width: 220px;">Quick Stock Action</th>
-                                    <th class="text-center">Action</th>
+                                    <th>Damage</th>
+                                    <th>Status</th>
+                                    <th class="text-center no-print" style="width: 230px;">Quick Operations</th>
+                                    <th class="text-center no-print">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody"></tbody>
@@ -236,15 +246,18 @@
                 </div>
             </div>
 
-            <!-- TAB 3: MASTER ITEM LEDGER & DATE-WISE HISTORY -->
+            <!-- TAB 3: MASTER ITEM LEDGER -->
             <div class="tab-pane fade" id="ledgerTab">
-                <div class="card p-3 mb-3">
-                    <div class="row g-2 align-items-center">
+                <div class="card p-3 mb-3 no-print">
+                    <div class="row g-2 align-items-center justify-content-between">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Date-Wise Audit Ledger</label>
+                            <label class="form-label small fw-bold text-muted mb-1">Filter Timeline By Specific Product</label>
                             <select id="ledgerProductSelect" class="form-select fw-semibold" onchange="loadProductLedger()">
                                 <option value="">-- All Recent Warehouse Transactions --</option>
                             </select>
+                        </div>
+                        <div class="col-md-4 text-end pt-3">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportLedgerCsv()"><i class="bi bi-download me-1"></i> Export Audit Ledger CSV</button>
                         </div>
                     </div>
                 </div>
@@ -255,7 +268,7 @@
                         <table class="table table-striped table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>Date & Time</th>
+                                    <th>Date & Time (IST)</th>
                                     <th>Product Name</th>
                                     <th>Operator / Worker</th>
                                     <th>Movement</th>
@@ -271,11 +284,11 @@
                 </div>
             </div>
 
-            <!-- TAB 4: GLOBAL MARKETPLACE PRICING & MARGINS -->
+            <!-- TAB 4: GLOBAL COUNTRY PRICING & MARGINS -->
             <div class="tab-pane fade" id="marginTab">
-                <div class="card p-3 mb-3">
+                <div class="card p-3 mb-3 no-print">
                     <div class="row g-3 align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label small fw-bold text-muted mb-1">Select Country / Marketplace</label>
                             <select id="marketplaceSelect" class="form-select fw-bold text-primary" onchange="loadMarketplaceData()">
                                 <option value="GTUS">🇺🇸 USA (GTUS)</option>
@@ -287,8 +300,15 @@
                                 <option value="RTAU">🇦🇺 Australia (RTAU)</option>
                             </select>
                         </div>
-                        <div class="col-md-8 text-end pt-3">
-                            <span class="badge bg-light text-dark border p-2">Calculation: Purchase Cost + FBA Fee + Freight = Min Selling Price</span>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted mb-1">Search Product / SKU / ASIN</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="marketSearchInput" class="form-control" placeholder="Search SKU or ASIN..." oninput="filterMarketplaceItems()">
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end pt-3">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportMarketplaceCsv()"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Country Margins CSV</button>
                         </div>
                     </div>
                 </div>
@@ -306,7 +326,7 @@
                                     <th>Freight</th>
                                     <th>Min Selling Price</th>
                                     <th>Profit Margin (%)</th>
-                                    <th>Amazon Store Link</th>
+                                    <th class="no-print">Amazon Store Link</th>
                                 </tr>
                             </thead>
                             <tbody id="marketplaceTableBody"></tbody>
@@ -319,7 +339,7 @@
     </div>
 </div>
 
-<!-- MODAL 1: TOUCH-FRIENDLY STOCK ADJUSTMENT -->
+<!-- MODAL 1: STOCK / DAMAGE ADJUSTMENT (Worker & Master) -->
 <div class="modal fade" id="stockActionModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-3">
@@ -330,14 +350,15 @@
             <div class="modal-body">
                 <p class="text-muted small mb-3" id="stockModalDesc"></p>
                 <div class="p-3 bg-light rounded-3 mb-3 d-flex justify-content-between align-items-center">
-                    <span class="small fw-bold text-muted">CURRENT WAREHOUSE STOCK:</span>
+                    <span class="small fw-bold text-muted">AVAILABLE PHYSICAL STOCK:</span>
                     <h4 class="fw-bold mb-0 text-primary" id="stockModalCurrent">0</h4>
                 </div>
 
-                <label class="form-label small fw-bold">Select Action</label>
+                <label class="form-label small fw-bold">Select Operation</label>
                 <div class="d-flex gap-2 mb-3">
                     <button type="button" class="btn btn-outline-success flex-fill fw-bold active" id="btnActionReceive" onclick="setActionType('RECEIVE')"><i class="bi bi-box-arrow-in-down"></i> RECEIVE (+)</button>
                     <button type="button" class="btn btn-outline-danger flex-fill fw-bold" id="btnActionIssue" onclick="setActionType('ISSUE')"><i class="bi bi-box-arrow-up"></i> ISSUE (-)</button>
+                    <button type="button" class="btn btn-outline-warning flex-fill fw-bold" id="btnActionDamage" onclick="setActionType('DAMAGE')"><i class="bi bi-exclamation-octagon"></i> DAMAGE</button>
                 </div>
 
                 <label class="form-label small fw-bold">Quantity</label>
@@ -345,7 +366,6 @@
                     <input type="number" id="modalQtyInput" class="form-control form-control-lg text-center fw-bold" value="1" min="1">
                 </div>
                 
-                <!-- Quick Preset Quantity Chips -->
                 <div class="d-flex gap-1 mb-3 justify-content-between">
                     <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(1)">+1</button>
                     <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(5)">+5</button>
@@ -355,8 +375,8 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Remarks / Order Number (Optional)</label>
-                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="e.g., Invoice #1024, Batch Transfer, Damage Check">
+                    <label class="form-label small fw-bold">Remarks / Invoice # (Optional)</label>
+                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="e.g. Invoice #1024, Damage batch">
                 </div>
 
                 <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitStockAdjustment()">Confirm Stock Update</button>
@@ -365,7 +385,106 @@
     </div>
 </div>
 
-<!-- MODAL 2: FULL PRODUCT QUICK VIEW -->
+<!-- MODAL 2: ADD NEW PRODUCT (Worker & Master) -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Product to Warehouse</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Product Description / Title *</label>
+                    <input type="text" id="newDesc" class="form-control" placeholder="e.g. Exotic Veda Turmeric Powder 200g">
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Brand</label>
+                        <input type="text" id="newBrand" class="form-control" placeholder="e.g. EXOTIC VEDA">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Country of Origin</label>
+                        <input type="text" id="newCountry" class="form-control" value="INDIA">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">HSN Code</label>
+                        <input type="text" id="newHsn" class="form-control" placeholder="33049910">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Initial Opening Stock</label>
+                        <input type="number" id="newOpening" class="form-control" value="0">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <input type="number" step="0.01" id="newPrice" class="form-control" placeholder="0.00">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <input type="number" step="0.01" id="newMrp" class="form-control" placeholder="0.00">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitNewProduct()">Save Product to Catalog</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 3: EDIT PRODUCT DETAILS (Master Only) -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Product Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProdId">
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Product Description *</label>
+                    <input type="text" id="editDesc" class="form-control">
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Brand</label>
+                        <input type="text" id="editBrand" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Country</label>
+                        <input type="text" id="editCountry" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">HSN Code</label>
+                        <input type="text" id="editHsn" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Expiry Date</label>
+                        <input type="text" id="editExpiry" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <input type="number" step="0.01" id="editPrice" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <input type="number" step="0.01" id="editMrp" class="form-control">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitEditProduct()">Update Product Details</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 4: PRODUCT QUICK VIEW -->
 <div class="modal fade" id="productDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-3">
@@ -378,24 +497,168 @@
     </div>
 </div>
 
+<!-- MODAL 5: FORGOT PASSWORD -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-key-fill text-primary me-1"></i> Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Enter username and the Master Recovery PIN to reset password.</p>
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Username</label>
+                    <input type="text" id="resetUsername" class="form-control" placeholder="master / worker1">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Master Recovery PIN</label>
+                    <input type="password" id="resetPin" class="form-control" placeholder="Default PIN: 2026">
+                </div>
+                <div class="mb-4 text-start">
+                    <label class="form-label small fw-bold">New Password</label>
+                    <input type="password" id="resetNewPassword" class="form-control" placeholder="Enter new password">
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handlePasswordReset()">Reset Password Now</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let currentUser = null;
 let allProducts = [];
+let rawMarketplaceItems = [];
 let activeStatusFilter = 'ALL';
 let activeAdjustmentProdId = null;
 let activeActionType = 'RECEIVE';
 let chartInstance = null;
-let stockModalObj, detailModalObj;
+let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj;
 
 document.addEventListener('DOMContentLoaded', () => {
     stockModalObj = new bootstrap.Modal(document.getElementById('stockActionModal'));
     detailModalObj = new bootstrap.Modal(document.getElementById('productDetailModal'));
+    forgotModalObj = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+    addProdModalObj = new bootstrap.Modal(document.getElementById('addProductModal'));
+    editProdModalObj = new bootstrap.Modal(document.getElementById('editProductModal'));
 });
 
+function openForgotModal() { forgotModalObj.show(); }
+function openAddProductModal() { addProdModalObj.show(); }
+
+async function submitNewProduct() {
+    const desc = document.getElementById('newDesc').value.trim();
+    if(!desc) { alert('Please enter product description'); return; }
+    
+    const body = {
+        description: desc,
+        brand: document.getElementById('newBrand').value.trim() || 'GENERAL',
+        country: document.getElementById('newCountry').value.trim() || 'INDIA',
+        hsn_code: document.getElementById('newHsn').value.trim(),
+        opening_stock: parseInt(document.getElementById('newOpening').value) || 0,
+        price: parseFloat(document.getElementById('newPrice').value) || 0,
+        mrp: parseFloat(document.getElementById('newMrp').value) || 0,
+        tax: 0.18
+    };
+
+    const res = await fetch('/api/products/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(res.ok) {
+        alert(data.message);
+        addProdModalObj.hide();
+        loadProducts();
+        if(currentUser.role === 'master') loadDashboard();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+function openEditModal(prodId) {
+    const p = allProducts.find(x => x.id === prodId);
+    if(!p) return;
+    document.getElementById('editProdId').value = p.id;
+    document.getElementById('editDesc').value = p.description;
+    document.getElementById('editBrand').value = p.brand;
+    document.getElementById('editCountry').value = p.country;
+    document.getElementById('editHsn').value = p.hsn_code || '';
+    document.getElementById('editExpiry').value = p.expiry_date || '';
+    document.getElementById('editPrice').value = p.price;
+    document.getElementById('editMrp').value = p.mrp;
+    editProdModalObj.show();
+}
+
+async function submitEditProduct() {
+    const id = document.getElementById('editProdId').value;
+    const body = {
+        id: parseInt(id),
+        description: document.getElementById('editDesc').value.trim(),
+        brand: document.getElementById('editBrand').value.trim(),
+        country: document.getElementById('editCountry').value.trim(),
+        hsn_code: document.getElementById('editHsn').value.trim(),
+        expiry_date: document.getElementById('editExpiry').value.trim(),
+        price: parseFloat(document.getElementById('editPrice').value) || 0,
+        mrp: parseFloat(document.getElementById('editMrp').value) || 0
+    };
+
+    const res = await fetch('/api/products/edit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(res.ok) {
+        alert(data.message);
+        editProdModalObj.hide();
+        loadProducts();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+async function deleteProduct(prodId, desc) {
+    if(!confirm(`Are you sure you want to PERMANENTLY DELETE product #${prodId}?\n"${desc}"`)) {
+        return;
+    }
+    const res = await fetch(`/api/products/delete/${prodId}`, {method: 'DELETE'});
+    const data = await res.json();
+    if(res.ok) {
+        alert(data.message);
+        loadProducts();
+        loadDashboard();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+async function handlePasswordReset() {
+    const u = document.getElementById('resetUsername').value.trim();
+    const pin = document.getElementById('resetPin').value.trim();
+    const newPass = document.getElementById('resetNewPassword').value.trim();
+    
+    if(!u || !pin || !newPass) { alert('Please fill all fields'); return; }
+    
+    const res = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: u, pin: pin, new_password: newPass})
+    });
+    const data = await res.json();
+    if(res.ok) {
+        alert(data.message);
+        forgotModalObj.hide();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
 async function handleLogin() {
-    const u = document.getElementById('username').value;
-    const p = document.getElementById('password').value;
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
     const res = await fetch('/api/login', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -459,32 +722,33 @@ async function loadDashboard() {
 
     const logRes = await fetch('/api/ledger');
     const logs = await logRes.json();
-    document.getElementById('liveFeedBody').innerHTML = logs.slice(0, 8).map(l => `
+    document.getElementById('liveFeedBody').innerHTML = logs.slice(0, 8).map(l => {
+        const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
+        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        return `
         <tr>
-            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':'bg-danger'}">${l.action}</span></td>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':'bg-warning')}">${l.action}</span></td>
             <td><strong class="small">${l.product_desc}</strong><br><span class="text-muted" style="font-size:0.75rem">${l.details || ''}</span></td>
-            <td class="text-end small"><span class="badge bg-secondary">${l.username}</span><br><span class="text-muted" style="font-size:0.7rem">${l.timestamp}</span></td>
+            <td class="text-end small">${userBadge}<br><span class="text-muted" style="font-size:0.7rem">${l.timestamp}</span></td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function loadProducts() {
     const res = await fetch('/api/products');
     allProducts = await res.json();
     
-    // Update Filter Pill Counts
     document.getElementById('countAll').innerText = allProducts.length;
     document.getElementById('countInStock').innerText = allProducts.filter(p => p.actual_stock > 10).length;
     document.getElementById('countLowStock').innerText = allProducts.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
     document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
     document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
-    // Brands Dropdown
     const brandSelect = document.getElementById('invBrandFilter');
     const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
     brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
 
-    // Ledger Select
     const ledgerSelect = document.getElementById('ledgerProductSelect');
     ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
         allProducts.map(p => `<option value="${p.id}">#${p.id} - ${p.description}</option>`).join('');
@@ -495,9 +759,11 @@ async function loadProducts() {
 function renderInventory(items) {
     const tbody = document.getElementById('inventoryTableBody');
     if(items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">No matching inventory products found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No matching inventory products found.</td></tr>`;
         return;
     }
+
+    const isMaster = currentUser && currentUser.role === 'master';
 
     tbody.innerHTML = items.map(p => {
         const stockClass = p.actual_stock > 10 ? 'text-success' : (p.actual_stock > 0 ? 'text-warning' : 'text-danger');
@@ -521,16 +787,24 @@ function renderInventory(items) {
                 <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
                 <span class="text-muted small d-block" style="font-size:0.75rem;">Opening: ${p.opening_stock}</span>
             </td>
+            <td class="text-center"><span class="badge bg-danger-subtle text-danger">${p.damage}</span></td>
             <td><span class="${statusBadge} px-2 py-1">${p.status}</span></td>
-            <td class="text-center">
+            <td class="text-center no-print">
                 <div class="btn-group" role="group">
                     <button class="btn btn-sm btn-outline-danger fw-semibold px-2" onclick="openStockModal(${p.id}, 'ISSUE')"><i class="bi bi-dash"></i> Issue</button>
                     <button class="btn btn-sm btn-outline-success fw-semibold px-2" onclick="openStockModal(${p.id}, 'RECEIVE')"><i class="bi bi-plus"></i> Receive</button>
+                    <button class="btn btn-sm btn-outline-warning fw-semibold px-1" title="Mark Damaged" onclick="openStockModal(${p.id}, 'DAMAGE')"><i class="bi bi-exclamation-octagon"></i></button>
                 </div>
             </td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-light border text-primary" onclick="openDetailModal(${p.id})" title="View Complete Specs"><i class="bi bi-info-circle"></i> Details</button>
-                <button class="btn btn-sm btn-light border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
+            <td class="text-center no-print">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-light border text-primary" onclick="openDetailModal(${p.id})" title="View Details"><i class="bi bi-info-circle"></i></button>
+                    <button class="btn btn-sm btn-light border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
+                    ${isMaster ? `
+                        <button class="btn btn-sm btn-light border text-success" onclick="openEditModal(${p.id})" title="Edit Details"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct(${p.id}, '${p.description.replace(/'/g, "\\'")}')" title="Delete Product"><i class="bi bi-trash"></i></button>
+                    ` : ''}
+                </div>
             </td>
         </tr>
         `;
@@ -567,12 +841,11 @@ function filterInventory() {
     renderInventory(filtered);
 }
 
-// Touch Stock Adjustment Modal Logic
 function openStockModal(prodId, defaultAction) {
     const prod = allProducts.find(p => p.id === prodId);
     if(!prod) return;
     activeAdjustmentProdId = prodId;
-    document.getElementById('stockModalTitle').innerText = `${defaultAction === 'RECEIVE' ? '📥 Receive Stock' : '📤 Issue Stock'}`;
+    document.getElementById('stockModalTitle').innerText = `${defaultAction === 'RECEIVE' ? '📥 Receive Stock' : (defaultAction === 'ISSUE' ? '📤 Issue Stock' : '⚠️ Mark Damaged Stock')}`;
     document.getElementById('stockModalDesc').innerText = `#${prod.id} - ${prod.description}`;
     document.getElementById('stockModalCurrent').innerText = prod.actual_stock;
     document.getElementById('modalQtyInput').value = "1";
@@ -585,45 +858,53 @@ function setActionType(type) {
     activeActionType = type;
     const btnRec = document.getElementById('btnActionReceive');
     const btnIss = document.getElementById('btnActionIssue');
+    const btnDam = document.getElementById('btnActionDamage');
+    
+    [btnRec, btnIss, btnDam].forEach(b => b.classList.remove('active', 'btn-success', 'btn-danger', 'btn-warning', 'text-white'));
+    btnRec.classList.add('btn-outline-success');
+    btnIss.classList.add('btn-outline-danger');
+    btnDam.classList.add('btn-outline-warning');
+    
     if(type === 'RECEIVE') {
-        btnRec.classList.add('btn-success', 'text-white');
+        btnRec.classList.add('btn-success', 'text-white', 'active');
         btnRec.classList.remove('btn-outline-success');
-        btnIss.classList.add('btn-outline-danger');
-        btnIss.classList.remove('btn-danger', 'text-white');
-    } else {
-        btnIss.classList.add('btn-danger', 'text-white');
+    } else if(type === 'ISSUE') {
+        btnIss.classList.add('btn-danger', 'text-white', 'active');
         btnIss.classList.remove('btn-outline-danger');
-        btnRec.classList.add('btn-outline-success');
-        btnRec.classList.remove('btn-success', 'text-white');
+    } else {
+        btnDam.classList.add('btn-warning', 'text-dark', 'active');
+        btnDam.classList.remove('btn-outline-warning');
     }
 }
 
-function setQty(val) {
-    document.getElementById('modalQtyInput').value = val;
-}
+function setQty(val) { document.getElementById('modalQtyInput').value = val; }
 
 async function submitStockAdjustment() {
     const qty = parseInt(document.getElementById('modalQtyInput').value);
     const remarks = document.getElementById('modalRemarksInput').value.trim();
-    if(isNaN(qty) || qty <= 0) {
-        alert('Please enter a valid quantity');
-        return;
-    }
-    const multiplier = activeActionType === 'RECEIVE' ? 1 : -1;
+    if(isNaN(qty) || qty <= 0) { alert('Please enter a valid quantity'); return; }
+    
+    let changeVal = qty;
+    let mode = 'STOCK';
+    if(activeActionType === 'ISSUE') changeVal = -qty;
+    else if(activeActionType === 'DAMAGE') mode = 'DAMAGE';
+
     const res = await fetch('/api/products/adjust', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({id: activeAdjustmentProdId, change: qty * multiplier, remarks: remarks})
+        body: JSON.stringify({id: activeAdjustmentProdId, change: changeVal, mode: mode, remarks: remarks})
     });
+    const data = await res.json();
     if(res.ok) {
         stockModalObj.hide();
         loadProducts();
         loadWorkerStats();
         if(currentUser.role === 'master') loadDashboard();
+    } else {
+        alert(data.message || 'Operation failed');
     }
 }
 
-// Product Details Modal
 function openDetailModal(prodId) {
     const p = allProducts.find(x => x.id === prodId);
     if(!p) return;
@@ -652,18 +933,22 @@ async function loadLedger(productId = '') {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history available.</td></tr>`;
         return;
     }
-    tbody.innerHTML = logs.map(l => `
+    tbody.innerHTML = logs.map(l => {
+        const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
+        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        return `
         <tr>
             <td class="small text-muted">${l.timestamp}</td>
             <td><strong>${l.product_desc}</strong></td>
-            <td><span class="badge bg-secondary">${l.username}</span></td>
-            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':'bg-danger'}">${l.action}</span></td>
+            <td>${userBadge}</td>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':'bg-warning')}">${l.action}</span></td>
             <td class="fw-bold">${l.quantity}</td>
             <td class="text-muted">${l.prev_stock}</td>
             <td class="fw-bold text-primary">${l.new_stock}</td>
             <td class="small text-muted">${l.details || ''}</td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function loadProductLedger() {
@@ -678,14 +963,30 @@ function viewSingleProductLedger(prodId) {
     loadLedger(prodId);
 }
 
+function exportLedgerCsv() {
+    const prodId = document.getElementById('ledgerProductSelect').value;
+    window.location.href = `/api/export/ledger-csv?product_id=${prodId}`;
+}
+
 async function loadMarketplaceData() {
     const mp = document.getElementById('marketplaceSelect').value;
     const res = await fetch(`/api/marketplaces/products?marketplace=${mp}`);
-    const items = await res.json();
+    rawMarketplaceItems = await res.json();
+    filterMarketplaceItems();
+}
+
+function filterMarketplaceItems() {
+    const q = (document.getElementById('marketSearchInput').value || '').toLowerCase().trim();
+    const items = rawMarketplaceItems.filter(item => {
+        return (item.sku && item.sku.toLowerCase().includes(q)) || (item.asin && item.asin.toLowerCase().includes(q));
+    });
+    renderMarketplaceTable(items);
+}
+
+function renderMarketplaceTable(items) {
     const tbody = document.getElementById('marketplaceTableBody');
-    
     if(items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No marketplace pricing records found for this country.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No matching marketplace pricing records found.</td></tr>`;
         return;
     }
 
@@ -702,11 +1003,16 @@ async function loadMarketplaceData() {
             <td>${item.freight ? item.freight.toFixed(2) : '-'}</td>
             <td><span class="badge bg-light text-dark border">${item.min_selling_rate ? item.min_selling_rate.toFixed(2) : '-'}</span></td>
             <td class="${item.margin >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}">${item.margin ? item.margin.toFixed(2) + '%' : '-'}</td>
-            <td>
+            <td class="no-print">
                 ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
             </td>
         </tr>
     `).join('');
+}
+
+function exportMarketplaceCsv() {
+    const mp = document.getElementById('marketplaceSelect').value;
+    window.location.href = `/api/export/marketplace-csv?marketplace=${mp}`;
 }
 
 function handleLogout() {
