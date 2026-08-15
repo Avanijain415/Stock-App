@@ -3,133 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Supply Chain & Margin Analytics Hub</title>
-    <!-- Bootstrap 5 & Icons -->
+    <title>Enterprise Warehouse & Global Margin Command Hub</title>
+    <!-- Modern Bootstrap 5, Icons & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-body: #f8fafc;
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark-navy: #0f172a;
             --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --nav-bg: #0f172a;
-            --accent: #2563eb;
+            --body-bg: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
         }
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .navbar-custom { background-color: var(--nav-bg); }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .nav-tabs .nav-link { color: #64748b; font-weight: 500; border: none; border-bottom: 3px solid transparent; padding: 12px 20px; }
-        .nav-tabs .nav-link.active { color: var(--accent); border-color: var(--accent); font-weight: 600; background: transparent; }
-        .stat-card { border-left: 4px solid var(--accent); }
-        .badge-pending { background-color: #fef3c7; color: #92400e; font-weight: 600; }
-        .badge-completed { background-color: #d1fae5; color: #065f46; font-weight: 600; }
-        .table th { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
-        .margin-pos { color: #16a34a; font-weight: bold; }
-        .margin-neg { color: #dc2626; font-weight: bold; }
+        body { background-color: var(--body-bg); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .navbar-custom { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .card { border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); background: var(--card-bg); }
+        .nav-pills .nav-link { color: var(--text-muted); font-weight: 600; border-radius: 10px; padding: 10px 18px; }
+        .nav-pills .nav-link.active { background-color: var(--primary); color: #ffffff; }
+        .stat-card { border-radius: 14px; padding: 18px; position: relative; overflow: hidden; }
+        .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
+        .stock-badge { font-size: 1.1rem; font-weight: 700; }
+        .quick-qty-btn { border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
+        .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: #f8fafc; }
+        .modal-content { border-radius: 16px; border: none; }
     </style>
 </head>
 <body>
 
-<!-- Login Section -->
+<!-- 1. LOGIN SCREEN -->
 <div class="container py-5" id="loginSection">
     <div class="row justify-content-center pt-5">
         <div class="col-md-4">
             <div class="card p-4 shadow-lg text-center">
-                <div class="mb-3"><i class="bi bi-shield-lock-fill fs-1 text-primary"></i></div>
-                <h4 class="fw-bold mb-1">Enterprise Warehouse Pro</h4>
-                <p class="text-muted small mb-4">Stock Ledger, Global Pricing & Margin Control</p>
+                <div class="mb-3">
+                    <span class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-block">
+                        <i class="bi bi-boxes fs-1"></i>
+                    </span>
+                </div>
+                <h4 class="fw-bold mb-1">Warehouse Portal</h4>
+                <p class="text-muted small mb-4">Stock Ledger, Operations & Margin Tracking</p>
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
-                    <input type="text" id="username" class="form-control" placeholder="master or worker1">
+                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
                 </div>
                 <div class="mb-4 text-start">
                     <label class="form-label small fw-bold">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="admin123 or worker123">
+                    <input type="password" id="password" class="form-control" placeholder="admin123 / worker123">
                 </div>
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In to Dashboard</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Main Application Section -->
+<!-- 2. MAIN APPLICATION -->
 <div class="d-none" id="appSection">
     <!-- Navbar -->
-    <nav class="navbar navbar-dark navbar-custom px-4 py-2">
+    <nav class="navbar navbar-dark navbar-custom px-4 py-2 sticky-top shadow-sm">
         <div class="d-flex align-items-center">
-            <i class="bi bi-globe-americas text-primary fs-4 me-2"></i>
-            <span class="navbar-brand fw-bold fs-5 mb-0">Global Inventory & Margin Hub</span>
+            <i class="bi bi-box-seam text-primary fs-4 me-2"></i>
+            <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <span class="badge bg-primary px-3 py-2" id="roleBadge"></span>
-            <button class="btn btn-outline-light btn-sm" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+            <div class="text-white text-end d-none d-md-block">
+                <div class="small fw-bold" id="navUserLabel">User</div>
+                <div class="text-white-50" style="font-size: 0.75rem;" id="navRoleLabel">Role</div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
         </div>
     </nav>
 
     <div class="container-fluid px-4 py-4">
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-tabs mb-4" id="mainTabs">
+        <!-- Tab Navigation Pills -->
+        <ul class="nav nav-pills mb-4 gap-2" id="mainPills">
             <li class="nav-item master-only">
-                <a class="nav-link active" data-bs-toggle="tab" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Dashboard</a>
+                <a class="nav-link active" data-bs-toggle="pill" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Overview</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="inventoryTabLink" data-bs-toggle="tab" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Warehouse Stock Ops</a>
+                <a class="nav-link" id="inventoryPillLink" data-bs-toggle="pill" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Live Stock Inventory</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#ledgerTab"><i class="bi bi-journal-text me-1"></i> Item History & Ledger</a>
+                <a class="nav-link" data-bs-toggle="pill" href="#ledgerTab"><i class="bi bi-journal-check me-1"></i> Item Ledger & History</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#marketplaceTab" onclick="loadMarketplaceData()"><i class="bi bi-currency-exchange me-1"></i> Country Pricing & Margins</a>
+                <a class="nav-link" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaces()"><i class="bi bi-globe2 me-1"></i> Global Country Pricing</a>
             </li>
         </ul>
 
         <div class="tab-content">
+            
             <!-- TAB 1: EXECUTIVE DASHBOARD (Master Only) -->
             <div class="tab-pane fade show active master-only" id="dashboardTab">
+                <!-- Master KPI Cards -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card">
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary);">
                             <span class="text-muted small fw-bold">TOTAL SKUs</span>
-                            <h3 class="fw-bold my-1" id="statTotalItems">0</h3>
-                            <span class="text-success small"><i class="bi bi-check-circle"></i> Active Warehouse Items</span>
+                            <h3 class="fw-bold my-1 text-primary" id="statTotalItems">0</h3>
+                            <span class="text-muted small"><i class="bi bi-check2-circle text-success"></i> Active Warehouse Catalog</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left-color: #10b981;">
-                            <span class="text-muted small fw-bold">TOTAL STOCK UNITS</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--success);">
+                            <span class="text-muted small fw-bold">TOTAL WAREHOUSE UNITS</span>
                             <h3 class="fw-bold my-1 text-success" id="statTotalQty">0</h3>
-                            <span class="text-muted small">Physical inventory available</span>
+                            <span class="text-muted small">Actual Available Physical Units</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left-color: #ef4444;">
-                            <span class="text-muted small fw-bold">LOW STOCK WARNINGS</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger);">
+                            <span class="text-muted small fw-bold">LOW STOCK ALERTS</span>
                             <h3 class="fw-bold my-1 text-danger" id="statLowStock">0</h3>
-                            <span class="text-danger small">Stock &le; 10 units</span>
+                            <span class="text-danger small">Requires Immediate Replenishment</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left-color: #f59e0b;">
-                            <span class="text-muted small fw-bold">GLOBAL MARKETPLACE SKUs</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning);">
+                            <span class="text-muted small fw-bold">GLOBAL MARKET SKUs</span>
                             <h3 class="fw-bold my-1 text-warning" id="statGlobalSkus">0</h3>
-                            <span class="text-warning small">US, CA, AU, UAE, IN pricing</span>
+                            <span class="text-muted small">Across 5 International Marketplaces</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Charts & Live Worker Stream -->
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Volume</h6>
+                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Stock Volume</h6>
                             <canvas id="topStockChart" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Live Worker Audit Feed</h6>
-                                <span class="badge bg-danger">REAL-TIME</span>
+                                <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Live Worker Audit Stream</h6>
+                                <span class="badge bg-danger">LIVE REFRESH</span>
                             </div>
                             <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
                                 <table class="table table-sm table-hover align-middle mb-0">
@@ -141,14 +158,40 @@
                 </div>
             </div>
 
-            <!-- TAB 2: WAREHOUSE STOCK OPS -->
+            <!-- TAB 2: LIVE STOCK INVENTORY (Worker & Master Operations) -->
             <div class="tab-pane fade" id="inventoryTab">
+                
+                <!-- Worker Daily Shift Summary Bar -->
+                <div class="card p-3 mb-3 bg-white border-primary border-opacity-25" id="workerShiftCard">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Daily Shift Summary</h6>
+                            <span class="text-muted small">Real-time tracker for today's physical warehouse movements</span>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <div class="px-3 py-1 bg-success-subtle text-success rounded-3 text-center">
+                                <span class="small fw-bold">TODAY RECEIVED</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayReceived">0</h5>
+                            </div>
+                            <div class="px-3 py-1 bg-danger-subtle text-danger rounded-3 text-center">
+                                <span class="small fw-bold">TODAY ISSUED</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayIssued">0</h5>
+                            </div>
+                            <div class="px-3 py-1 bg-primary-subtle text-primary rounded-3 text-center">
+                                <span class="small fw-bold">TOTAL OPERATIONS</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayOps">0</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search, Filter Pills & Export Bar -->
                 <div class="card p-3 mb-3">
-                    <div class="row g-2 align-items-center">
-                        <div class="col-md-4">
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-md-5">
                             <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                                <input type="text" id="invSearch" class="form-control border-start-0" placeholder="Search SKU, Description, HSN..." oninput="filterInventory()">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="invSearch" class="form-control border-start-0" placeholder="Type Description, HSN Code, Brand to search..." oninput="filterInventory()">
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -156,25 +199,35 @@
                                 <option value="">All Brands</option>
                             </select>
                         </div>
-                        <div class="col-md-5 text-end master-only">
+                        <div class="col-md-4 text-end master-only">
                             <a href="/api/export/csv" class="btn btn-outline-success"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Master CSV</a>
                         </div>
                     </div>
+
+                    <!-- Quick Status Filter Pills -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-primary filter-btn" onclick="setStatusFilter('ALL', this)">All Items (<span id="countAll">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-success filter-btn" onclick="setStatusFilter('IN_STOCK', this)">In Stock (<span id="countInStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-warning filter-btn" onclick="setStatusFilter('LOW_STOCK', this)">Low Stock (&le;10) (<span id="countLowStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-danger filter-btn" onclick="setStatusFilter('OUT_OF_STOCK', this)">Out of Stock (0) (<span id="countOutStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('PENDING', this)">Pending Status (<span id="countPending">0</span>)</button>
+                    </div>
                 </div>
 
+                <!-- Main Inventory Table -->
                 <div class="card">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Product Details</th>
+                                    <th style="width: 60px;">ID</th>
+                                    <th>Product Information</th>
                                     <th>Brand / Origin</th>
                                     <th>Price / MRP</th>
-                                    <th>Current Stock</th>
+                                    <th class="text-center">Actual Stock</th>
                                     <th>Task Status</th>
-                                    <th>Stock Ops</th>
-                                    <th>Action</th>
+                                    <th class="text-center" style="width: 220px;">Quick Stock Action</th>
+                                    <th class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="inventoryTableBody"></tbody>
@@ -183,33 +236,33 @@
                 </div>
             </div>
 
-            <!-- TAB 3: MASTER ITEM LEDGER -->
+            <!-- TAB 3: MASTER ITEM LEDGER & DATE-WISE HISTORY -->
             <div class="tab-pane fade" id="ledgerTab">
                 <div class="card p-3 mb-3">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Complete Ledger Timeline</label>
-                            <select id="ledgerProductSelect" class="form-select" onchange="loadProductLedger()">
-                                <option value="">-- All Recent Transactions --</option>
+                            <label class="form-label small fw-bold text-muted mb-1">Select Specific Product For Date-Wise Audit Ledger</label>
+                            <select id="ledgerProductSelect" class="form-select fw-semibold" onchange="loadProductLedger()">
+                                <option value="">-- All Recent Warehouse Transactions --</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="card p-3">
-                    <h6 class="fw-bold mb-3">Audit Log & Date-Wise Ledger</h6>
+                    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Complete Audit Trail & Ledger Timeline</h6>
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover align-middle">
-                            <thead class="table-light">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead>
                                 <tr>
                                     <th>Date & Time</th>
-                                    <th>Product</th>
-                                    <th>User</th>
-                                    <th>Action</th>
+                                    <th>Product Name</th>
+                                    <th>Operator / Worker</th>
+                                    <th>Movement</th>
                                     <th>Quantity</th>
-                                    <th>Previous</th>
-                                    <th>New Balance</th>
-                                    <th>Remarks</th>
+                                    <th>Previous Stock</th>
+                                    <th>Closing Stock</th>
+                                    <th>Audit Details</th>
                                 </tr>
                             </thead>
                             <tbody id="fullLedgerBody"></tbody>
@@ -218,24 +271,24 @@
                 </div>
             </div>
 
-            <!-- TAB 4: COUNTRY-WISE PRICING & MARGIN ANALYSIS (New ✨) -->
-            <div class="tab-pane fade" id="marketplaceTab">
+            <!-- TAB 4: GLOBAL MARKETPLACE PRICING & MARGINS -->
+            <div class="tab-pane fade" id="marginTab">
                 <div class="card p-3 mb-3">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted mb-1">Select Marketplace / Country</label>
-                            <select id="marketplaceSelect" class="form-select fw-semibold" onchange="loadMarketplaceData()">
-                                <option value="GTUS">USA 🇺🇸 (GTUS)</option>
-                                <option value="CANADA">Canada 🇨🇦</option>
-                                <option value="GTAU">Australia 🇦🇺 (GTAU)</option>
-                                <option value="UAE">UAE 🇦🇪</option>
-                                <option value="INDIA">India 🇮🇳</option>
-                                <option value="VAIS NEW">USA 🇺🇸 (VAIS)</option>
-                                <option value="RTAU">Australia 🇦🇺 (RTAU)</option>
+                            <label class="form-label small fw-bold text-muted mb-1">Select Country / Marketplace</label>
+                            <select id="marketplaceSelect" class="form-select fw-bold text-primary" onchange="loadMarketplaceData()">
+                                <option value="GTUS">🇺🇸 USA (GTUS)</option>
+                                <option value="CANADA">🇨🇦 Canada</option>
+                                <option value="GTAU">🇦🇺 Australia (GTAU)</option>
+                                <option value="UAE">🇦🇪 UAE (Dubai)</option>
+                                <option value="INDIA">🇮🇳 India</option>
+                                <option value="VAIS NEW">🇺🇸 USA (VAIS)</option>
+                                <option value="RTAU">🇦🇺 Australia (RTAU)</option>
                             </select>
                         </div>
                         <div class="col-md-8 text-end pt-3">
-                            <span class="badge bg-light text-dark border p-2 me-2">Formulas: Purchase Cost + FBA Fee + Freight = Min Selling Price</span>
+                            <span class="badge bg-light text-dark border p-2">Calculation: Purchase Cost + FBA Fee + Freight = Min Selling Price</span>
                         </div>
                     </div>
                 </div>
@@ -243,7 +296,7 @@
                 <div class="card">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>SKU & ASIN</th>
@@ -252,8 +305,8 @@
                                     <th>Conv. Rate</th>
                                     <th>Freight</th>
                                     <th>Min Selling Price</th>
-                                    <th>Margin (%)</th>
-                                    <th>Amazon Link</th>
+                                    <th>Profit Margin (%)</th>
+                                    <th>Amazon Store Link</th>
                                 </tr>
                             </thead>
                             <tbody id="marketplaceTableBody"></tbody>
@@ -261,6 +314,66 @@
                     </div>
                 </div>
             </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 1: TOUCH-FRIENDLY STOCK ADJUSTMENT -->
+<div class="modal fade" id="stockActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="stockModalTitle">Stock Adjustment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3" id="stockModalDesc"></p>
+                <div class="p-3 bg-light rounded-3 mb-3 d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold text-muted">CURRENT WAREHOUSE STOCK:</span>
+                    <h4 class="fw-bold mb-0 text-primary" id="stockModalCurrent">0</h4>
+                </div>
+
+                <label class="form-label small fw-bold">Select Action</label>
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-success flex-fill fw-bold active" id="btnActionReceive" onclick="setActionType('RECEIVE')"><i class="bi bi-box-arrow-in-down"></i> RECEIVE (+)</button>
+                    <button type="button" class="btn btn-outline-danger flex-fill fw-bold" id="btnActionIssue" onclick="setActionType('ISSUE')"><i class="bi bi-box-arrow-up"></i> ISSUE (-)</button>
+                </div>
+
+                <label class="form-label small fw-bold">Quantity</label>
+                <div class="input-group mb-2">
+                    <input type="number" id="modalQtyInput" class="form-control form-control-lg text-center fw-bold" value="1" min="1">
+                </div>
+                
+                <!-- Quick Preset Quantity Chips -->
+                <div class="d-flex gap-1 mb-3 justify-content-between">
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(1)">+1</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(5)">+5</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(10)">+10</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(50)">+50</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(100)">+100</button>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Remarks / Order Number (Optional)</label>
+                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="e.g., Invoice #1024, Batch Transfer, Damage Check">
+                </div>
+
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitStockAdjustment()">Confirm Stock Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 2: FULL PRODUCT QUICK VIEW -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="detailModalTitle">Product Specifications</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailModalBody"></div>
         </div>
     </div>
 </div>
@@ -269,7 +382,16 @@
 <script>
 let currentUser = null;
 let allProducts = [];
+let activeStatusFilter = 'ALL';
+let activeAdjustmentProdId = null;
+let activeActionType = 'RECEIVE';
 let chartInstance = null;
+let stockModalObj, detailModalObj;
+
+document.addEventListener('DOMContentLoaded', () => {
+    stockModalObj = new bootstrap.Modal(document.getElementById('stockActionModal'));
+    detailModalObj = new bootstrap.Modal(document.getElementById('productDetailModal'));
+});
 
 async function handleLogin() {
     const u = document.getElementById('username').value;
@@ -283,22 +405,32 @@ async function handleLogin() {
         currentUser = await res.json();
         document.getElementById('loginSection').classList.add('d-none');
         document.getElementById('appSection').classList.remove('d-none');
-        document.getElementById('roleBadge').innerText = `${currentUser.username.toUpperCase()} (${currentUser.role.toUpperCase()})`;
+        document.getElementById('navUserLabel').innerText = currentUser.username;
+        document.getElementById('navRoleLabel').innerText = currentUser.role.toUpperCase() + ' ACCESS';
         
         if(currentUser.role !== 'master') {
             document.querySelectorAll('.master-only').forEach(el => el.classList.add('d-none'));
-            const invLink = document.getElementById('inventoryTabLink');
+            const invLink = document.getElementById('inventoryPillLink');
             const tab = new bootstrap.Tab(invLink);
             tab.show();
         } else {
             loadDashboard();
             setInterval(loadDashboard, 15000);
         }
+        loadWorkerStats();
         loadProducts();
         loadLedger();
     } else {
-        alert('Invalid credentials!');
+        alert('Invalid login credentials');
     }
+}
+
+async function loadWorkerStats() {
+    const res = await fetch('/api/worker-stats');
+    const data = await res.json();
+    document.getElementById('workerTodayReceived').innerText = Number(data.today_received).toLocaleString();
+    document.getElementById('workerTodayIssued').innerText = Number(data.today_issued).toLocaleString();
+    document.getElementById('workerTodayOps').innerText = data.today_ops;
 }
 
 async function loadDashboard() {
@@ -314,9 +446,9 @@ async function loadDashboard() {
     chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: stats.top_stocks.map(s => s.description.length > 18 ? s.description.substring(0,18)+'...' : s.description),
+            labels: stats.top_stocks.map(s => s.description.length > 16 ? s.description.substring(0,16)+'...' : s.description),
             datasets: [{
-                label: 'Units in Stock',
+                label: 'Physical Units',
                 data: stats.top_stocks.map(s => s.actual_stock),
                 backgroundColor: '#2563eb',
                 borderRadius: 6
@@ -340,54 +472,175 @@ async function loadProducts() {
     const res = await fetch('/api/products');
     allProducts = await res.json();
     
+    // Update Filter Pill Counts
+    document.getElementById('countAll').innerText = allProducts.length;
+    document.getElementById('countInStock').innerText = allProducts.filter(p => p.actual_stock > 10).length;
+    document.getElementById('countLowStock').innerText = allProducts.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
+    document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
+    document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
+
+    // Brands Dropdown
     const brandSelect = document.getElementById('invBrandFilter');
     const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
     brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
 
+    // Ledger Select
     const ledgerSelect = document.getElementById('ledgerProductSelect');
-    ledgerSelect.innerHTML = '<option value="">-- All Recent Transactions --</option>' + 
-        allProducts.map(p => `<option value="${p.id}">${p.description}</option>`).join('');
+    ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
+        allProducts.map(p => `<option value="${p.id}">#${p.id} - ${p.description}</option>`).join('');
 
-    renderInventory(allProducts);
+    filterInventory();
 }
 
 function renderInventory(items) {
     const tbody = document.getElementById('inventoryTableBody');
-    tbody.innerHTML = items.map(p => `
+    if(items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">No matching inventory products found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map(p => {
+        const stockClass = p.actual_stock > 10 ? 'text-success' : (p.actual_stock > 0 ? 'text-warning' : 'text-danger');
+        const statusBadge = p.status === 'Completed' ? 'badge bg-success-subtle text-success' : 'badge bg-warning-subtle text-warning';
+        return `
         <tr>
             <td class="text-muted fw-bold">#${p.id}</td>
             <td>
-                <strong>${p.description}</strong><br>
-                <span class="text-muted small">HSN: ${p.hsn_code || 'N/A'} | Expiry: ${p.expiry_date || 'N/A'}</span>
-            </td>
-            <td><span class="badge bg-light text-dark border">${p.brand}</span><br><small class="text-muted">${p.country}</small></td>
-            <td>₹${p.price} <br><small class="text-muted">MRP: ₹${p.mrp}</small></td>
-            <td><h5 class="mb-0 fw-bold text-${p.actual_stock > 10 ? 'dark' : (p.actual_stock > 0 ? 'warning' : 'danger')}">${p.actual_stock}</h5></td>
-            <td><span class="badge ${p.status === 'Completed' ? 'badge-completed' : 'badge-pending'} px-2 py-1">${p.status}</span></td>
-            <td>
-                <button class="btn btn-sm btn-outline-danger me-1" onclick="adjustStock(${p.id}, -1)">- Issue</button>
-                <button class="btn btn-sm btn-outline-success" onclick="adjustStock(${p.id}, 1)">+ Receive</button>
+                <span class="fw-bold d-block text-dark">${p.description}</span>
+                <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: ${p.expiry_date || 'N/A'}</span>
             </td>
             <td>
-                <button class="btn btn-sm btn-light border text-primary" onclick="viewSingleProductLedger(${p.id})"><i class="bi bi-clock-history"></i> History</button>
+                <span class="badge bg-light text-dark border">${p.brand}</span>
+                <span class="text-muted small d-block">${p.country}</span>
+            </td>
+            <td>
+                <span class="fw-semibold">₹${p.price}</span>
+                <span class="text-muted small d-block">MRP: ₹${p.mrp}</span>
+            </td>
+            <td class="text-center">
+                <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
+                <span class="text-muted small d-block" style="font-size:0.75rem;">Opening: ${p.opening_stock}</span>
+            </td>
+            <td><span class="${statusBadge} px-2 py-1">${p.status}</span></td>
+            <td class="text-center">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-danger fw-semibold px-2" onclick="openStockModal(${p.id}, 'ISSUE')"><i class="bi bi-dash"></i> Issue</button>
+                    <button class="btn btn-sm btn-outline-success fw-semibold px-2" onclick="openStockModal(${p.id}, 'RECEIVE')"><i class="bi bi-plus"></i> Receive</button>
+                </div>
+            </td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-light border text-primary" onclick="openDetailModal(${p.id})" title="View Complete Specs"><i class="bi bi-info-circle"></i> Details</button>
+                <button class="btn btn-sm btn-light border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
-async function adjustStock(id, direction) {
-    const qty = prompt(`Enter quantity to ${direction > 0 ? 'RECEIVE (+)' : 'ISSUE (-)'}:`, "1");
-    if(!qty || isNaN(qty) || qty <= 0) return;
+function setStatusFilter(filter, btn) {
+    activeStatusFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('btn-primary', 'btn-success', 'btn-warning', 'btn-danger', 'btn-secondary');
+        b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-primary');
+    filterInventory();
+}
 
+function filterInventory() {
+    const q = document.getElementById('invSearch').value.toLowerCase();
+    const brand = document.getElementById('invBrandFilter').value;
+    
+    const filtered = allProducts.filter(p => {
+        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || p.brand.toLowerCase().includes(q);
+        const matchesBrand = brand === '' || p.brand === brand;
+        
+        let matchesStatus = true;
+        if(activeStatusFilter === 'IN_STOCK') matchesStatus = p.actual_stock > 10;
+        else if(activeStatusFilter === 'LOW_STOCK') matchesStatus = p.actual_stock > 0 && p.actual_stock <= 10;
+        else if(activeStatusFilter === 'OUT_OF_STOCK') matchesStatus = p.actual_stock === 0;
+        else if(activeStatusFilter === 'PENDING') matchesStatus = p.status === 'Pending';
+        
+        return matchesQuery && matchesBrand && matchesStatus;
+    });
+    renderInventory(filtered);
+}
+
+// Touch Stock Adjustment Modal Logic
+function openStockModal(prodId, defaultAction) {
+    const prod = allProducts.find(p => p.id === prodId);
+    if(!prod) return;
+    activeAdjustmentProdId = prodId;
+    document.getElementById('stockModalTitle').innerText = `${defaultAction === 'RECEIVE' ? '📥 Receive Stock' : '📤 Issue Stock'}`;
+    document.getElementById('stockModalDesc').innerText = `#${prod.id} - ${prod.description}`;
+    document.getElementById('stockModalCurrent').innerText = prod.actual_stock;
+    document.getElementById('modalQtyInput').value = "1";
+    document.getElementById('modalRemarksInput').value = "";
+    setActionType(defaultAction);
+    stockModalObj.show();
+}
+
+function setActionType(type) {
+    activeActionType = type;
+    const btnRec = document.getElementById('btnActionReceive');
+    const btnIss = document.getElementById('btnActionIssue');
+    if(type === 'RECEIVE') {
+        btnRec.classList.add('btn-success', 'text-white');
+        btnRec.classList.remove('btn-outline-success');
+        btnIss.classList.add('btn-outline-danger');
+        btnIss.classList.remove('btn-danger', 'text-white');
+    } else {
+        btnIss.classList.add('btn-danger', 'text-white');
+        btnIss.classList.remove('btn-outline-danger');
+        btnRec.classList.add('btn-outline-success');
+        btnRec.classList.remove('btn-success', 'text-white');
+    }
+}
+
+function setQty(val) {
+    document.getElementById('modalQtyInput').value = val;
+}
+
+async function submitStockAdjustment() {
+    const qty = parseInt(document.getElementById('modalQtyInput').value);
+    const remarks = document.getElementById('modalRemarksInput').value.trim();
+    if(isNaN(qty) || qty <= 0) {
+        alert('Please enter a valid quantity');
+        return;
+    }
+    const multiplier = activeActionType === 'RECEIVE' ? 1 : -1;
     const res = await fetch('/api/products/adjust', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({id: id, change: parseInt(qty) * direction})
+        body: JSON.stringify({id: activeAdjustmentProdId, change: qty * multiplier, remarks: remarks})
     });
     if(res.ok) {
+        stockModalObj.hide();
         loadProducts();
+        loadWorkerStats();
         if(currentUser.role === 'master') loadDashboard();
     }
+}
+
+// Product Details Modal
+function openDetailModal(prodId) {
+    const p = allProducts.find(x => x.id === prodId);
+    if(!p) return;
+    document.getElementById('detailModalTitle').innerText = p.description;
+    document.getElementById('detailModalBody').innerHTML = `
+        <div class="row g-2">
+            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong>${p.hsn_code || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong>${p.brand} (${p.country})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Price / MRP</small><strong>₹${p.price} (MRP: ₹${p.mrp})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Tax % / Price After Tax</small><strong>${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong>${p.per_petti || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong>${p.expiry_date || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong>${p.opening_stock}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Damaged Units</small><strong class="text-danger">${p.damage}</strong></div>
+        </div>
+    `;
+    detailModalObj.show();
 }
 
 async function loadLedger(productId = '') {
@@ -395,12 +648,10 @@ async function loadLedger(productId = '') {
     const res = await fetch(url);
     const logs = await res.json();
     const tbody = document.getElementById('fullLedgerBody');
-    
     if(logs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history available.</td></tr>`;
         return;
     }
-    
     tbody.innerHTML = logs.map(l => `
         <tr>
             <td class="small text-muted">${l.timestamp}</td>
@@ -450,23 +701,12 @@ async function loadMarketplaceData() {
             <td>${item.conv_rate || '-'}</td>
             <td>${item.freight ? item.freight.toFixed(2) : '-'}</td>
             <td><span class="badge bg-light text-dark border">${item.min_selling_rate ? item.min_selling_rate.toFixed(2) : '-'}</span></td>
-            <td class="${item.margin >= 0 ? 'margin-pos' : 'margin-neg'}">${item.margin ? item.margin.toFixed(2) + '%' : '-'}</td>
+            <td class="${item.margin >= 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}">${item.margin ? item.margin.toFixed(2) + '%' : '-'}</td>
             <td>
                 ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
             </td>
         </tr>
     `).join('');
-}
-
-function filterInventory() {
-    const q = document.getElementById('invSearch').value.toLowerCase();
-    const brand = document.getElementById('invBrandFilter').value;
-    const filtered = allProducts.filter(p => {
-        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || p.brand.toLowerCase().includes(q);
-        const matchesBrand = brand === '' || p.brand === brand;
-        return matchesQuery && matchesBrand;
-    });
-    renderInventory(filtered);
 }
 
 function handleLogout() {
