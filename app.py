@@ -19,7 +19,7 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Users
+    # 1. Users
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +29,7 @@ def init_db():
         )
     ''')
     
-    # Physical Warehouse Products (Sheet1)
+    # 2. Warehouse Products (Sheet1)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,7 +50,7 @@ def init_db():
         )
     ''')
     
-    # Global Marketplace Pricing & Margins (GTUS, GTAU, CANADA, UAE, INDIA, etc.)
+    # 3. Global Marketplace Products
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS marketplace_products (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,7 +70,7 @@ def init_db():
         )
     ''')
     
-    # Activity & Audit Ledger
+    # 4. Activity Logs / Ledger
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS activity_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,6 +88,7 @@ def init_db():
     
     cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('master', 'admin123', 'master')")
     cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('worker1', 'worker123', 'worker')")
+    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('worker2', 'worker123', 'worker')")
     
     conn.commit()
     conn.close()
@@ -102,7 +103,7 @@ def migrate_from_excel():
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     
-    # 1. Migrate Warehouse Products (Sheet1)
+    # Sheet1 Warehouse Data
     cursor.execute("SELECT COUNT(*) FROM products")
     if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
         sheet = wb['Sheet1']
@@ -157,7 +158,7 @@ def migrate_from_excel():
                     except:
                         pass
 
-    # 2. Migrate All Global Country Marketplace Sheets
+    # Marketplace Sheets
     cursor.execute("SELECT COUNT(*) FROM marketplace_products")
     if cursor.fetchone()[0] == 0:
         marketplaces = [
@@ -174,8 +175,6 @@ def migrate_from_excel():
             if m_sheet not in wb.sheetnames:
                 continue
             ws = wb[m_sheet]
-            
-            # Find header row
             header_row = None
             for r in range(1, 10):
                 row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 10)]
@@ -209,7 +208,6 @@ def migrate_from_excel():
                 try: margin = float(ws.cell(row=r, column=11).value or 0)
                 except: margin = 0.0
                 
-                # Check for link in col 12, 13, 14
                 link = ""
                 for l_col in [12, 13, 14]:
                     l_val = str(ws.cell(row=r, column=l_col).value or '').strip()
@@ -226,12 +224,9 @@ def migrate_from_excel():
     conn.commit()
     conn.close()
 
-# Auto-reset DB to migrate all fresh sheets
 if os.path.exists(DB_NAME):
-    try:
-        os.remove(DB_NAME)
-    except:
-        pass
+    try: os.remove(DB_NAME)
+    except: pass
 
 init_db()
 migrate_from_excel()
@@ -261,6 +256,21 @@ def logout():
     session.clear()
     return jsonify({"status": "success"})
 
+@app.route('/api/worker-stats', methods=['GET'])
+def worker_stats():
+    username = session.get('username', '')
+    conn = get_db()
+    today_received = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'RECEIVE' AND date(timestamp) = date('now')", (username,)).fetchone()[0] or 0
+    today_issued = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'ISSUE' AND date(timestamp) = date('now')", (username,)).fetchone()[0] or 0
+    today_ops = conn.execute("SELECT COUNT(*) FROM activity_log WHERE username = ? AND date(timestamp) = date('now')", (username,)).fetchone()[0] or 0
+    
+    conn.close()
+    return jsonify({
+        "today_received": today_received,
+        "today_issued": today_issued,
+        "today_ops": today_ops
+    })
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     conn = get_db()
@@ -289,6 +299,15 @@ def get_products():
     conn.close()
     return jsonify([dict(p) for p in products])
 
+@app.route('/api/products/<int:prod_id>', methods=['GET'])
+def get_single_product(prod_id):
+    conn = get_db()
+    prod = conn.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
+    conn.close()
+    if prod:
+        return jsonify(dict(prod))
+    return jsonify({"error": "Not found"}), 404
+
 @app.route('/api/products/adjust', methods=['POST'])
 def adjust_stock():
     if 'username' not in session:
@@ -297,6 +316,7 @@ def adjust_stock():
     data = request.json
     prod_id = data.get('id')
     change = int(data.get('change', 0))
+    remarks = data.get('remarks', '')
     action_type = "RECEIVE" if change > 0 else "ISSUE"
     
     conn = get_db()
@@ -311,21 +331,16 @@ def adjust_stock():
     status = "Pending" if new_stock <= 5 else "Completed"
     
     cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (new_stock, status, prod_id))
+    
+    detail_str = remarks if remarks else f"{session['username']} {action_type}D {abs(change)} units"
     cursor.execute('''
         INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (prod_id, prod['description'], session['username'], action_type, abs(change), prev_stock, new_stock, f"{session['username']} {action_type}D {abs(change)} units"))
+    ''', (prod_id, prod['description'], session['username'], action_type, abs(change), prev_stock, new_stock, detail_str))
     
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "new_stock": new_stock, "product_status": status})
-
-@app.route('/api/marketplaces', methods=['GET'])
-def get_marketplaces():
-    conn = get_db()
-    rows = conn.execute("SELECT DISTINCT marketplace, marketplace_label FROM marketplace_products").fetchall()
-    conn.close()
-    return jsonify([dict(r) for r in rows])
 
 @app.route('/api/marketplaces/products', methods=['GET'])
 def get_marketplace_products():
