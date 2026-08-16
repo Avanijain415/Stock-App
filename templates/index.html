@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Warehouse & Supply Chain ERP</title>
-    <!-- Bootstrap 5, Icons & Google Fonts -->
+    <title>Enterprise Warehouse & Global Margin Hub</title>
+    <!-- Bootstrap 5, Icons & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,6 @@
             --text-muted: #64748b;
             --nav-bg: #0f172a;
             --border-color: #e2e8f0;
-            --table-hover: #f1f5f9;
             --input-bg: #ffffff;
             --primary: #2563eb;
             --success: #10b981;
@@ -31,26 +30,40 @@
             --text-muted: #94a3b8;
             --nav-bg: #020617;
             --border-color: #334155;
-            --table-hover: #1e293b;
             --input-bg: #0f172a;
             --primary: #3b82f6;
         }
         body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.2s, color 0.2s; }
         .navbar-custom { background: var(--nav-bg); }
         .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
-        .form-control, .form-select, .input-group-text { background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color); }
-        .form-control:focus, .form-select:focus { background-color: var(--input-bg); color: var(--text-main); }
+        
+        /* Dark mode inputs and dropdowns high contrast */
+        .form-control, .form-select, .input-group-text { background-color: var(--input-bg) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
+        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.8; }
+        
         .nav-pills .nav-link { color: var(--text-muted); font-weight: 600; border-radius: 10px; padding: 9px 16px; font-size: 0.9rem; }
         .nav-pills .nav-link.active { background-color: var(--primary); color: #ffffff; }
         .stat-card { border-radius: 14px; padding: 18px; position: relative; }
+        
+        /* Filter Pills in Dark & Light */
         .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #94a3b8; border-color: #475569; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: #334155; color: #fff; }
+        
         .stock-badge { font-size: 1.15rem; font-weight: 700; }
-        .table { color: var(--text-main); }
-        .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: var(--card-bg); border-bottom-color: var(--border-color); }
-        .table td { border-bottom-color: var(--border-color); }
+        .table { color: var(--text-main) !important; }
+        .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: var(--card-bg); border-bottom: 2px solid var(--border-color); }
+        .table td { border-bottom: 1px solid var(--border-color); }
         .modal-content { background-color: var(--card-bg); color: var(--text-main); border-radius: 16px; border: 1px solid var(--border-color); }
         .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1080; }
         .negative-margin-row { background-color: rgba(239, 68, 68, 0.08) !important; }
+        
+        /* High contrast buttons in dark mode */
+        [data-theme="dark"] .btn-outline-secondary { color: #cbd5e1; border-color: #475569; }
+        [data-theme="dark"] .btn-outline-secondary:hover { background-color: #334155; color: #fff; }
+        [data-theme="dark"] .btn-outline-success { color: #34d399; border-color: #059669; }
+        [data-theme="dark"] .btn-outline-success:hover { background-color: #059669; color: #fff; }
+        
         @media print {
             .no-print { display: none !important; }
             .card { border: none !important; box-shadow: none !important; }
@@ -81,7 +94,7 @@
                     </span>
                 </div>
                 <h4 class="fw-bold mb-1">Enterprise ERP Portal</h4>
-                <p class="text-muted small mb-4">Role-Based Warehouse & Global Pricing Hub</p>
+                <p class="text-muted small mb-4">Warehouse Operations & Margin Tracking</p>
                 
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
@@ -207,7 +220,7 @@
             <!-- TAB 2: LIVE INVENTORY OPS (Worker & Master) -->
             <div class="tab-pane fade" id="inventoryTab">
                 <!-- Shift Summary Bar for Floor Worker -->
-                <div class="card p-3 mb-3 bg-white border-primary border-opacity-25 no-print" id="workerShiftCard">
+                <div class="card p-3 mb-3 border-primary border-opacity-25 no-print" id="workerShiftCard">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div>
                             <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Shift Inventory Operations (IST)</h6>
@@ -235,9 +248,9 @@
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-md-5">
                             <div class="input-group">
-                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
                                 <input type="text" id="invSearch" class="form-control border-start-0 border-end-0" placeholder="Search SKU, Description, HSN (Press '/' to search)..." oninput="filterInventory()">
-                                <button class="btn btn-white border border-start-0 text-muted" onclick="clearSearch()"><i class="bi bi-x-circle"></i></button>
+                                <button class="btn btn-outline-secondary border-start-0" onclick="clearSearch()"><i class="bi bi-x-circle"></i></button>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -255,9 +268,9 @@
                     <!-- Status Filter Pills -->
                     <div class="d-flex flex-wrap gap-2">
                         <button class="btn btn-sm btn-primary filter-btn" onclick="setStatusFilter('ALL', this)">All Items (<span id="countAll">0</span>)</button>
-                        <button class="btn btn-sm btn-outline-success filter-btn" onclick="setStatusFilter('IN_STOCK', this)">In Stock (<span id="countInStock">0</span>)</button>
-                        <button class="btn btn-sm btn-outline-warning filter-btn" onclick="setStatusFilter('LOW_STOCK', this)">Low Stock (&le;10) (<span id="countLowStock">0</span>)</button>
-                        <button class="btn btn-sm btn-outline-danger filter-btn" onclick="setStatusFilter('OUT_OF_STOCK', this)">Out of Stock (0) (<span id="countOutStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('IN_STOCK', this)">In Stock (<span id="countInStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('LOW_STOCK', this)">Low Stock (&le;10) (<span id="countLowStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('OUT_OF_STOCK', this)">Out of Stock (0) (<span id="countOutStock">0</span>)</button>
                         <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('PENDING', this)">Pending Status (<span id="countPending">0</span>)</button>
                     </div>
                 </div>
@@ -397,7 +410,7 @@
                         <div class="col-md-4">
                             <label class="form-label small fw-bold text-muted mb-1">Search SKU / ASIN</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
                                 <input type="text" id="marketSearchInput" class="form-control" placeholder="Search SKU or ASIN..." oninput="filterMarketplaceItems()">
                             </div>
                         </div>
@@ -451,7 +464,7 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted small mb-3" id="stockModalDesc"></p>
-                <div class="p-3 bg-light rounded-3 mb-3 d-flex justify-content-between align-items-center">
+                <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center border" style="background-color: var(--input-bg);">
                     <span class="small fw-bold text-muted">AVAILABLE PHYSICAL STOCK:</span>
                     <h4 class="fw-bold mb-0 text-primary" id="stockModalCurrent">0</h4>
                 </div>
@@ -469,11 +482,11 @@
                 </div>
                 
                 <div class="d-flex gap-1 mb-3 justify-content-between">
-                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(1)">+1</button>
-                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(5)">+5</button>
-                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(10)">+10</button>
-                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(50)">+50</button>
-                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(100)">+100</button>
+                    <button class="btn btn-outline-secondary quick-qty-btn flex-fill" onclick="setQty(1)">+1</button>
+                    <button class="btn btn-outline-secondary quick-qty-btn flex-fill" onclick="setQty(5)">+5</button>
+                    <button class="btn btn-outline-secondary quick-qty-btn flex-fill" onclick="setQty(10)">+10</button>
+                    <button class="btn btn-outline-secondary quick-qty-btn flex-fill" onclick="setQty(50)">+50</button>
+                    <button class="btn btn-outline-secondary quick-qty-btn flex-fill" onclick="setQty(100)">+100</button>
                 </div>
 
                 <div class="mb-3">
@@ -653,6 +666,10 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('erp-theme', next);
     updateThemeIcon(next);
+    if(currentUser && currentUser.role === 'master') {
+        loadDashboard();
+        loadAnalytics();
+    }
 }
 
 function updateThemeIcon(theme) {
@@ -863,6 +880,9 @@ async function loadDashboard() {
     document.getElementById('statAssetVal').innerText = '₹' + Number(stats.total_inventory_val || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
     document.getElementById('statDamageVal').innerText = '₹' + Number(stats.total_damage_loss || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
 
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
     const ctx = document.getElementById('topStockChart').getContext('2d');
     if(topChartInstance) topChartInstance.destroy();
     topChartInstance = new Chart(ctx, {
@@ -876,7 +896,17 @@ async function loadDashboard() {
                 borderRadius: 6
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: {
+                x: { ticks: { color: textColor } },
+                y: { ticks: { color: textColor } }
+            },
+            plugins: {
+                legend: { labels: { color: textColor } }
+            }
+        }
     });
 
     const logRes = await fetch('/api/ledger');
@@ -897,6 +927,8 @@ async function loadDashboard() {
 async function loadAnalytics() {
     const res = await fetch('/api/stats');
     const stats = await res.json();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
     
     // Brand Distribution Donut Chart
     const ctxBrand = document.getElementById('brandChart').getContext('2d');
@@ -910,7 +942,11 @@ async function loadAnalytics() {
                 backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
     });
 
     // Marketplace Comparison Chart
@@ -927,7 +963,15 @@ async function loadAnalytics() {
                 borderRadius: 6
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            scales: {
+                x: { ticks: { color: textColor } },
+                y: { ticks: { color: textColor } }
+            },
+            plugins: { legend: { labels: { color: textColor } } }
+        }
     });
 }
 
@@ -956,8 +1000,8 @@ async function loadActivityLogs() {
             <td><strong>${l.product_desc}</strong></td>
             <td>${userBadge}</td>
             <td class="fw-bold">${l.quantity}</td>
-            <td class="text-muted">${l.prev_stock}</td>
-            <td class="fw-bold text-primary">${l.new_stock}</td>
+            <td class="text-muted fw-semibold">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
+            <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
             <td class="small text-muted">${l.details || ''}</td>
         </tr>
         `;
@@ -974,9 +1018,15 @@ async function loadProducts() {
     document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
     document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
+    // Populate Brand Dropdown with Product Counts
     const brandSelect = document.getElementById('invBrandFilter');
-    const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
-    brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+    const brandMap = {};
+    allProducts.forEach(p => {
+        const b = p.brand || 'GENERAL';
+        brandMap[b] = (brandMap[b] || 0) + 1;
+    });
+    brandSelect.innerHTML = '<option value="">All Brands (All Products)</option>' + 
+        Object.keys(brandMap).sort().map(b => `<option value="${b}">${b} (${brandMap[b]} items)</option>`).join('');
 
     const ledgerSelect = document.getElementById('ledgerProductSelect');
     ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
@@ -1001,7 +1051,7 @@ function renderInventory(items) {
         <tr>
             <td class="text-muted fw-bold">#${p.id}</td>
             <td>
-                <span class="fw-bold d-block text-dark">${p.description}</span>
+                <span class="fw-bold d-block">${p.description}</span>
                 <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong class="text-secondary">${p.expiry_date || 'N/A'}</strong></span>
             </td>
             <td>
@@ -1027,11 +1077,11 @@ function renderInventory(items) {
             </td>
             <td class="text-center no-print">
                 <div class="btn-group">
-                    <button class="btn btn-sm btn-light border text-primary" onclick="openDetailModal(${p.id})" title="View Details"><i class="bi bi-info-circle"></i></button>
-                    <button class="btn btn-sm btn-light border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary border text-primary" onclick="openDetailModal(${p.id})" title="View Details"><i class="bi bi-info-circle"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
                     ${isMaster ? `
-                        <button class="btn btn-sm btn-light border text-success" onclick="openEditModal(${p.id})" title="Edit Details"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct(${p.id}, '${p.description.replace(/'/g, "\\'")}')" title="Delete Product"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary border text-success" onclick="openEditModal(${p.id})" title="Edit Details"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary border text-danger" onclick="deleteProduct(${p.id}, '${p.description.replace(/'/g, "\\'")}')" title="Delete Product"><i class="bi bi-trash"></i></button>
                     ` : ''}
                 </div>
             </td>
@@ -1043,7 +1093,7 @@ function renderInventory(items) {
 function setStatusFilter(filter, btn) {
     activeStatusFilter = filter;
     document.querySelectorAll('.filter-btn').forEach(b => {
-        b.classList.remove('btn-primary', 'btn-success', 'btn-warning', 'btn-danger', 'btn-secondary');
+        b.classList.remove('btn-primary', 'btn-success', 'btn-warning', 'btn-danger');
         b.classList.add('btn-outline-secondary');
     });
     btn.classList.remove('btn-outline-secondary');
@@ -1057,11 +1107,11 @@ function clearSearch() {
 }
 
 function filterInventory() {
-    const q = document.getElementById('invSearch').value.toLowerCase();
+    const q = (document.getElementById('invSearch').value || '').toLowerCase().trim();
     const brand = document.getElementById('invBrandFilter').value;
     
     const filtered = allProducts.filter(p => {
-        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || p.brand.toLowerCase().includes(q);
+        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q));
         const matchesBrand = brand === '' || p.brand === brand;
         
         let matchesStatus = true;
@@ -1094,7 +1144,7 @@ function setActionType(type) {
     const btnIss = document.getElementById('btnActionIssue');
     const btnDam = document.getElementById('btnActionDamage');
     
-    [btnRec, btnIss, btnDam].forEach(b => b.classList.remove('active', 'btn-success', 'btn-danger', 'btn-warning', 'text-white'));
+    [btnRec, btnIss, btnDam].forEach(b => b.classList.remove('active', 'btn-success', 'btn-danger', 'btn-warning', 'text-white', 'text-dark'));
     btnRec.classList.add('btn-outline-success');
     btnIss.classList.add('btn-outline-danger');
     btnDam.classList.add('btn-outline-warning');
@@ -1170,7 +1220,7 @@ async function loadLedger(productId = '') {
     }
     tbody.innerHTML = logs.map(l => {
         const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
-        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Migration</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
         return `
         <tr>
             <td class="small text-muted">${l.timestamp}</td>
@@ -1178,8 +1228,8 @@ async function loadLedger(productId = '') {
             <td>${userBadge}</td>
             <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
             <td class="fw-bold">${l.quantity}</td>
-            <td class="text-muted">${l.prev_stock}</td>
-            <td class="fw-bold text-primary">${l.new_stock}</td>
+            <td class="text-muted fw-semibold">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
+            <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
             <td class="small text-muted">${l.details || ''}</td>
         </tr>
         `;
@@ -1237,7 +1287,6 @@ function renderMarketplaceTable(items) {
         const conv = item.conv_rate || 1.0;
         const isNeg = item.margin < 0;
         
-        // Accurate Rupee conversions
         const inrSelling = !isIndia && item.selling_price ? (item.selling_price * conv).toFixed(2) : null;
         const inrFba = !isIndia && item.fba_fee ? (item.fba_fee * conv).toFixed(2) : null;
         const inrMinSell = !isIndia && item.min_selling_rate ? (item.min_selling_rate * conv).toFixed(2) : null;
