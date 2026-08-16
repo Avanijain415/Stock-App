@@ -1,591 +1,1096 @@
-import os
-import sqlite3
-from datetime import datetime, timezone, timedelta
-from flask import Flask, render_template, request, jsonify, session, Response
-import openpyxl
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Warehouse & Global Margin Command Hub</title>
+    <!-- Bootstrap 5, Icons & Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --card-bg: #ffffff;
+            --body-bg: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        body { background-color: var(--body-bg); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .navbar-custom { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .card { border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); background: var(--card-bg); }
+        .nav-pills .nav-link { color: var(--text-muted); font-weight: 600; border-radius: 10px; padding: 10px 18px; }
+        .nav-pills .nav-link.active { background-color: var(--primary); color: #ffffff; }
+        .stat-card { border-radius: 14px; padding: 18px; position: relative; }
+        .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
+        .stock-badge { font-size: 1.15rem; font-weight: 700; }
+        .quick-qty-btn { border-radius: 8px; font-weight: 600; font-size: 0.85rem; }
+        .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: #f8fafc; }
+        .modal-content { border-radius: 16px; border: none; }
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1080; }
+        .negative-margin-row { background-color: rgba(239, 68, 68, 0.05) !important; }
+        @media print {
+            .no-print { display: none !important; }
+            .card { border: none !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
 
-app = Flask(__name__)
-app.secret_key = 'enterprise_super_secret_key_2026'
+<!-- Toast Notification Area -->
+<div class="toast-container">
+    <div id="actionToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toastMessage">Stock updated successfully!</div>
+            <button id="toastUndoBtn" class="btn btn-sm btn-warning me-2 my-auto px-2 py-0 fw-bold d-none" onclick="triggerUndo()">UNDO</button>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
 
-DB_NAME = 'stock.db'
-EXCEL_FILE = 'NEW APRIL STOCK SHEET 2026.xlsx'
-MASTER_RESET_PIN = '2026'
-
-IST = timezone(timedelta(hours=5, minutes=30))
-
-def get_current_ist_time():
-    return datetime.now(IST).strftime('%Y-%m-%d %I:%M:%S %p')
-
-def get_current_ist_date():
-    return datetime.now(IST).strftime('%Y-%m-%d')
-
-def get_db():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            hsn_code TEXT,
-            country TEXT,
-            brand TEXT,
-            description TEXT NOT NULL,
-            price REAL DEFAULT 0,
-            tax REAL DEFAULT 0,
-            price_after_tax REAL DEFAULT 0,
-            mrp REAL DEFAULT 0,
-            per_petti INTEGER DEFAULT 0,
-            expiry_date TEXT,
-            opening_stock INTEGER DEFAULT 0,
-            actual_stock INTEGER DEFAULT 0,
-            damage INTEGER DEFAULT 0,
-            status TEXT DEFAULT 'Completed'
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS marketplace_products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            marketplace TEXT NOT NULL,
-            marketplace_label TEXT NOT NULL,
-            currency_symbol TEXT DEFAULT '$',
-            sku TEXT,
-            asin TEXT,
-            selling_price REAL DEFAULT 0,
-            fba_fee REAL DEFAULT 0,
-            purchase_price REAL DEFAULT 0,
-            conv_rate REAL DEFAULT 0,
-            purchase_rate REAL DEFAULT 0,
-            freight REAL DEFAULT 0,
-            min_selling_rate REAL DEFAULT 0,
-            margin REAL DEFAULT 0,
-            product_link TEXT
-        )
-    ''')
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS activity_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER,
-            product_desc TEXT,
-            username TEXT,
-            action TEXT,
-            quantity INTEGER,
-            prev_stock INTEGER,
-            new_stock INTEGER,
-            details TEXT,
-            timestamp TEXT
-        )
-    ''')
-    
-    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('master', 'admin123', 'master')")
-    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('worker1', 'worker123', 'worker')")
-    cursor.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('worker2', 'worker123', 'worker')")
-    
-    conn.commit()
-    conn.close()
-
-def migrate_from_excel():
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    if not os.path.exists(EXCEL_FILE):
-        conn.close()
-        return
-
-    wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
-    
-    # 1. Migrate Warehouse Products
-    cursor.execute("SELECT COUNT(*) FROM products")
-    if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
-        sheet = wb['Sheet1']
-        for row in range(3, sheet.max_row + 1):
-            desc = sheet.cell(row=row, column=5).value
-            if not desc or str(desc).strip().lower() in ['discription', 'description', 'none', '']:
-                continue
+<!-- 1. LOGIN SCREEN -->
+<div class="container py-5" id="loginSection">
+    <div class="row justify-content-center pt-5">
+        <div class="col-md-4">
+            <div class="card p-4 shadow-lg text-center">
+                <div class="mb-3">
+                    <span class="p-3 bg-primary-subtle text-primary rounded-circle d-inline-block">
+                        <i class="bi bi-shield-lock-fill fs-1"></i>
+                    </span>
+                </div>
+                <h4 class="fw-bold mb-1">Warehouse Hub Portal</h4>
+                <p class="text-muted small mb-4">Stock Ledger, Operations & Margin Tracking</p>
                 
-            hsn = str(sheet.cell(row=row, column=2).value or '').replace('.0', '')
-            country = str(sheet.cell(row=row, column=3).value or 'INDIA')
-            brand = str(sheet.cell(row=row, column=4).value or 'GENERAL')
-            
-            try: price = float(sheet.cell(row=row, column=6).value or 0)
-            except: price = 0.0
-            try: tax = float(sheet.cell(row=row, column=7).value or 0)
-            except: tax = 0.0
-            try: price_after_tax = float(sheet.cell(row=row, column=8).value or 0)
-            except: price_after_tax = 0.0
-            try: mrp = float(sheet.cell(row=row, column=9).value or 0)
-            except: mrp = 0.0
-            try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
-            except: per_petti = 0
-            
-            expiry = str(sheet.cell(row=row, column=11).value or '')
-            try: opening = int(float(sheet.cell(row=row, column=14).value or 0))
-            except: opening = 0
-            try: actual = int(float(sheet.cell(row=row, column=15).value or opening))
-            except: actual = opening
-            try: damage = int(float(sheet.cell(row=row, column=17).value or 0))
-            except: damage = 0
-
-            status = "Pending" if actual <= 5 else "Completed"
-
-            cursor.execute('''
-                INSERT INTO products (hsn_code, country, brand, description, price, tax, price_after_tax, mrp, per_petti, expiry_date, opening_stock, actual_stock, damage, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
-            prod_id = cursor.lastrowid
-            
-            for col in range(18, min(sheet.max_column + 1, 50)):
-                val = sheet.cell(row=row, column=col).value
-                col_hdr = sheet.cell(row=2, column=col).value
-                if val is not None and str(val).strip() not in ['', 'None', 'nan']:
-                    try:
-                        qty = int(float(val))
-                        action = "RECEIVE" if qty > 0 else "ISSUE"
-                        date_str = str(col_hdr)[:10] if col_hdr else "Excel Import"
-                        cursor.execute('''
-                            INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (prod_id, str(desc).strip(), 'System Excel', action, abs(qty), opening, actual, f"Initial Data from {date_str}", get_current_ist_time()))
-                    except:
-                        pass
-
-    # 2. Migrate Global Country Marketplace Sheets
-    cursor.execute("SELECT COUNT(*) FROM marketplace_products")
-    if cursor.fetchone()[0] == 0:
-        marketplaces = [
-            ('GTUS', 'USA 🇺🇸 (GTUS)', '$'),
-            ('CANADA', 'Canada 🇨🇦', 'CA$'),
-            ('GTAU', 'Australia 🇦🇺 (GTAU)', 'A$'),
-            ('UAE', 'UAE 🇦🇪', 'AED '),
-            ('INDIA', 'India 🇮🇳', '₹'),
-            ('VAIS NEW', 'USA 🇺🇸 (VAIS)', '$'),
-            ('RTAU', 'Australia 🇦🇺 (RTAU)', 'A$')
-        ]
-        
-        for m_sheet, m_label, m_curr in marketplaces:
-            if m_sheet not in wb.sheetnames:
-                continue
-            ws = wb[m_sheet]
-            header_row = None
-            for r in range(1, 10):
-                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 10)]
-                if any('SKU' in v for v in row_vals):
-                    header_row = r
-                    break
-            
-            if not header_row:
-                continue
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
+                </div>
                 
-            for r in range(header_row + 1, ws.max_row + 1):
-                sku = ws.cell(row=r, column=2).value
-                if not sku or str(sku).strip().lower() in ['none', '', 'sku', 'seller-sku']:
-                    continue
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••">
+                </div>
+
+                <div class="d-flex justify-content-end mb-4">
+                    <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-semibold" onclick="openForgotModal()">Forgot Password?</a>
+                </div>
+
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In to Dashboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. MAIN APPLICATION -->
+<div class="d-none" id="appSection">
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark navbar-custom px-4 py-2 sticky-top shadow-sm no-print">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-box-seam text-primary fs-4 me-2"></i>
+            <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-white text-end d-none d-md-block">
+                <div class="small fw-bold" id="navUserLabel">User</div>
+                <div class="text-white-50" style="font-size: 0.75rem;" id="navRoleLabel">Role</div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 py-4">
+        <!-- Navigation Pills -->
+        <ul class="nav nav-pills mb-4 gap-2 no-print" id="mainPills">
+            <li class="nav-item master-only">
+                <a class="nav-link active" data-bs-toggle="pill" href="#dashboardTab"><i class="bi bi-speedometer2 me-1"></i> Executive Overview</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="inventoryPillLink" data-bs-toggle="pill" href="#inventoryTab"><i class="bi bi-boxes me-1"></i> Live Stock Inventory</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#ledgerTab"><i class="bi bi-journal-check me-1"></i> Item Ledger & History</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaceData()"><i class="bi bi-globe2 me-1"></i> Global Country Pricing</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <!-- TAB 1: EXECUTIVE DASHBOARD (Master Only) -->
+            <div class="tab-pane fade show active master-only" id="dashboardTab">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary);">
+                            <span class="text-muted small fw-bold">TOTAL ASSET VALUATION</span>
+                            <h3 class="fw-bold my-1 text-primary" id="statAssetVal">₹0</h3>
+                            <span class="text-muted small"><span id="statTotalItems">0</span> SKUs (<span id="statTotalQty">0</span> Units)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger);">
+                            <span class="text-muted small fw-bold">DAMAGE LOSS VALUE</span>
+                            <h3 class="fw-bold my-1 text-danger" id="statDamageVal">₹0</h3>
+                            <span class="text-danger small">Total Defective Units Loss</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning);">
+                            <span class="text-muted small fw-bold">LOW STOCK ALERTS</span>
+                            <h3 class="fw-bold my-1 text-warning" id="statLowStock">0</h3>
+                            <span class="text-warning small">Stock &le; 10 units (Replenish)</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card p-3 stat-card" style="border-left: 4px solid #8b5cf6;">
+                            <span class="text-muted small fw-bold">GLOBAL MARKET SKUs</span>
+                            <h3 class="fw-bold my-1 text-dark" id="statGlobalSkus">0</h3>
+                            <span class="text-muted small">5 International Marketplaces</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Volume</h6>
+                            <canvas id="topStockChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Live Worker Audit Stream</h6>
+                                <span class="badge bg-danger">LIVE REFRESH</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                <table class="table table-sm table-hover align-middle mb-0">
+                                    <tbody id="liveFeedBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: LIVE STOCK INVENTORY -->
+            <div class="tab-pane fade" id="inventoryTab">
+                <!-- Shift Summary Bar -->
+                <div class="card p-3 mb-3 bg-white border-primary border-opacity-25 no-print" id="workerShiftCard">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Daily Shift Summary (IST)</h6>
+                            <span class="text-muted small">Real-time physical inventory operations logged today</span>
+                        </div>
+                        <div class="d-flex gap-3">
+                            <div class="px-3 py-1 bg-success-subtle text-success rounded-3 text-center">
+                                <span class="small fw-bold">TODAY RECEIVED</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayReceived">0</h5>
+                            </div>
+                            <div class="px-3 py-1 bg-danger-subtle text-danger rounded-3 text-center">
+                                <span class="small fw-bold">TODAY ISSUED</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayIssued">0</h5>
+                            </div>
+                            <div class="px-3 py-1 bg-primary-subtle text-primary rounded-3 text-center">
+                                <span class="small fw-bold">TOTAL OPERATIONS</span>
+                                <h5 class="fw-bold mb-0" id="workerTodayOps">0</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search, Filter Pills & Action Tools -->
+                <div class="card p-3 mb-3 no-print">
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="invSearch" class="form-control border-start-0 border-end-0" placeholder="Type SKU Name, HSN Code, Brand (Press '/' to search)..." oninput="filterInventory()">
+                                <button class="btn btn-white border border-start-0 text-muted" onclick="clearSearch()"><i class="bi bi-x-circle"></i></button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="invBrandFilter" class="form-select" onchange="filterInventory()">
+                                <option value="">All Brands</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Sheet</button>
+                            <a href="/api/export/warehouse-csv" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
+                            <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="bi bi-plus-lg"></i> Add New SKU</button>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter Pills -->
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-primary filter-btn" onclick="setStatusFilter('ALL', this)">All Items (<span id="countAll">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-success filter-btn" onclick="setStatusFilter('IN_STOCK', this)">In Stock (<span id="countInStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-warning filter-btn" onclick="setStatusFilter('LOW_STOCK', this)">Low Stock (&le;10) (<span id="countLowStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-danger filter-btn" onclick="setStatusFilter('OUT_OF_STOCK', this)">Out of Stock (0) (<span id="countOutStock">0</span>)</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="setStatusFilter('PENDING', this)">Pending Status (<span id="countPending">0</span>)</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 60px;">ID</th>
+                                    <th>Product Information</th>
+                                    <th>Brand / Origin</th>
+                                    <th>Price / MRP</th>
+                                    <th class="text-center">Actual Stock</th>
+                                    <th>Damage</th>
+                                    <th>Status</th>
+                                    <th class="text-center no-print" style="width: 230px;">Quick Operations</th>
+                                    <th class="text-center no-print">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MASTER ITEM LEDGER -->
+            <div class="tab-pane fade" id="ledgerTab">
+                <div class="card p-3 mb-3 no-print">
+                    <div class="row g-2 align-items-center justify-content-between">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted mb-1">Filter Timeline By Specific Product</label>
+                            <select id="ledgerProductSelect" class="form-select fw-semibold" onchange="loadProductLedger()">
+                                <option value="">-- All Recent Warehouse Transactions --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end pt-3">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportLedgerCsv()"><i class="bi bi-download me-1"></i> Export Audit Ledger CSV</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-3">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Complete Audit Trail & Ledger Timeline</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time (IST)</th>
+                                    <th>Product Name</th>
+                                    <th>Operator / Worker</th>
+                                    <th>Movement</th>
+                                    <th>Quantity</th>
+                                    <th>Previous Stock</th>
+                                    <th>Closing Stock</th>
+                                    <th>Audit Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullLedgerBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: GLOBAL COUNTRY PRICING & MARGINS -->
+            <div class="tab-pane fade" id="marginTab">
+                <div class="card p-3 mb-3 no-print">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted mb-1">Select Country / Marketplace</label>
+                            <select id="marketplaceSelect" class="form-select fw-bold text-primary" onchange="loadMarketplaceData()">
+                                <option value="GTUS">🇺🇸 USA (GTUS)</option>
+                                <option value="CANADA">🇨🇦 Canada</option>
+                                <option value="GTAU">🇦🇺 Australia (GTAU)</option>
+                                <option value="UAE">🇦🇪 UAE (Dubai)</option>
+                                <option value="INDIA">🇮🇳 India</option>
+                                <option value="VAIS NEW">🇺🇸 USA (VAIS)</option>
+                                <option value="RTAU">🇦🇺 Australia (RTAU)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Search Product / SKU / ASIN</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="marketSearchInput" class="form-control" placeholder="Search SKU or ASIN..." oninput="filterMarketplaceItems()">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted mb-1">Margin Filter</label>
+                            <select id="marginFilterSelect" class="form-select" onchange="filterMarketplaceItems()">
+                                <option value="ALL">All Margins</option>
+                                <option value="LOSS">Negative / Loss Only ⚠️</option>
+                                <option value="PROFIT">Profitable Only 🟢</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 text-end pt-3">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportMarketplaceCsv()"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Margins CSV</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>SKU & ASIN</th>
+                                    <th>Selling Price</th>
+                                    <th>FBA Fee</th>
+                                    <th>Conv. Rate</th>
+                                    <th>Freight</th>
+                                    <th>Min Selling Price</th>
+                                    <th>Profit Margin (%)</th>
+                                    <th class="no-print">Amazon Store Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="marketplaceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 1: STOCK / DAMAGE ADJUSTMENT -->
+<div class="modal fade" id="stockActionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="stockModalTitle">Stock Adjustment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3" id="stockModalDesc"></p>
+                <div class="p-3 bg-light rounded-3 mb-3 d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold text-muted">AVAILABLE PHYSICAL STOCK:</span>
+                    <h4 class="fw-bold mb-0 text-primary" id="stockModalCurrent">0</h4>
+                </div>
+
+                <label class="form-label small fw-bold">Select Operation</label>
+                <div class="d-flex gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-success flex-fill fw-bold active" id="btnActionReceive" onclick="setActionType('RECEIVE')"><i class="bi bi-box-arrow-in-down"></i> RECEIVE (+)</button>
+                    <button type="button" class="btn btn-outline-danger flex-fill fw-bold" id="btnActionIssue" onclick="setActionType('ISSUE')"><i class="bi bi-box-arrow-up"></i> ISSUE (-)</button>
+                    <button type="button" class="btn btn-outline-warning flex-fill fw-bold" id="btnActionDamage" onclick="setActionType('DAMAGE')"><i class="bi bi-exclamation-octagon"></i> DAMAGE</button>
+                </div>
+
+                <label class="form-label small fw-bold">Quantity</label>
+                <div class="input-group mb-2">
+                    <input type="number" id="modalQtyInput" class="form-control form-control-lg text-center fw-bold" value="1" min="1">
+                </div>
                 
-                asin = str(ws.cell(row=r, column=3).value or '')
-                try: price = float(ws.cell(row=r, column=4).value or 0)
-                except: price = 0.0
-                try: fba = float(ws.cell(row=r, column=5).value or 0)
-                except: fba = 0.0
-                try: purchase_price = float(ws.cell(row=r, column=6).value or 0)
-                except: purchase_price = 0.0
-                try: conv_rate = float(ws.cell(row=r, column=7).value or 0)
-                except: conv_rate = 0.0
-                try: purchase_rate = float(ws.cell(row=r, column=8).value or 0)
-                except: purchase_rate = 0.0
-                try: freight = float(ws.cell(row=r, column=9).value or 0)
-                except: freight = 0.0
-                try: min_selling = float(ws.cell(row=r, column=10).value or 0)
-                except: min_selling = 0.0
-                try: margin = float(ws.cell(row=r, column=11).value or 0)
-                except: margin = 0.0
-                
-                link = ""
-                for l_col in [12, 13, 14]:
-                    l_val = str(ws.cell(row=r, column=l_col).value or '').strip()
-                    if l_val.startswith('http'):
-                        link = l_val
-                        break
-                
-                cursor.execute('''
-                    INSERT INTO marketplace_products 
-                    (marketplace, marketplace_label, currency_symbol, sku, asin, selling_price, fba_fee, purchase_price, conv_rate, purchase_rate, freight, min_selling_rate, margin, product_link)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (m_sheet, m_label, m_curr, str(sku).strip(), asin, price, fba, purchase_price, conv_rate, purchase_rate, freight, min_selling, margin, link))
+                <div class="d-flex gap-1 mb-3 justify-content-between">
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(1)">+1</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(5)">+5</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(10)">+10</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(50)">+50</button>
+                    <button class="btn btn-light border quick-qty-btn flex-fill" onclick="setQty(100)">+100</button>
+                </div>
 
-    conn.commit()
-    conn.close()
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Remarks / Invoice # (Optional)</label>
+                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="e.g. Invoice #1024, Damage batch">
+                </div>
 
-if os.path.exists(DB_NAME):
-    try: os.remove(DB_NAME)
-    except: pass
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitStockAdjustment()">Confirm Stock Update</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-init_db()
-migrate_from_excel()
+<!-- MODAL 2: ADD NEW PRODUCT -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Product to Warehouse</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Product Description / Title *</label>
+                    <input type="text" id="newDesc" class="form-control" placeholder="e.g. Exotic Veda Turmeric Powder 200g">
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Brand</label>
+                        <input type="text" id="newBrand" class="form-control" placeholder="e.g. EXOTIC VEDA">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Country of Origin</label>
+                        <input type="text" id="newCountry" class="form-control" value="INDIA">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">HSN Code</label>
+                        <input type="text" id="newHsn" class="form-control" placeholder="33049910">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Initial Opening Stock</label>
+                        <input type="number" id="newOpening" class="form-control" value="0">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <input type="number" step="0.01" id="newPrice" class="form-control" placeholder="0.00">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <input type="number" step="0.01" id="newMrp" class="form-control" placeholder="0.00">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitNewProduct()">Save Product to Catalog</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-# ----------------- APIS -----------------
+<!-- MODAL 3: EDIT PRODUCT DETAILS -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Product Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProdId">
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Product Description *</label>
+                    <input type="text" id="editDesc" class="form-control">
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Brand</label>
+                        <input type="text" id="editBrand" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Country</label>
+                        <input type="text" id="editCountry" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">HSN Code</label>
+                        <input type="text" id="editHsn" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Expiry Date</label>
+                        <input type="text" id="editExpiry" class="form-control">
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <input type="number" step="0.01" id="editPrice" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <input type="number" step="0.01" id="editMrp" class="form-control">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitEditProduct()">Update Product Details</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+<!-- MODAL 4: PRODUCT QUICK VIEW -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-3">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="detailModalTitle">Product Specifications</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailModalBody"></div>
+        </div>
+    </div>
+</div>
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json or {}
-    u = data.get('username', '').strip()
-    p = data.get('password', '').strip()
-    conn = get_db()
-    user = conn.execute("SELECT * FROM users WHERE username = ? AND password = ?", (u, p)).fetchone()
-    conn.close()
-    if user:
-        session['username'] = user['username']
-        session['role'] = user['role']
-        return jsonify({"status": "success", "username": user['username'], "role": user['role']})
-    return jsonify({"status": "error", "message": "Invalid username or password"}), 401
+<!-- MODAL 5: FORGOT PASSWORD -->
+<div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-key-fill text-primary me-1"></i> Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Enter username and the Master Recovery PIN to reset password.</p>
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Username</label>
+                    <input type="text" id="resetUsername" class="form-control" placeholder="master / worker1">
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label small fw-bold">Master Recovery PIN</label>
+                    <input type="password" id="resetPin" class="form-control" placeholder="Default PIN: 2026">
+                </div>
+                <div class="mb-4 text-start">
+                    <label class="form-label small fw-bold">New Password</label>
+                    <input type="password" id="resetNewPassword" class="form-control" placeholder="Enter new password">
+                </div>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handlePasswordReset()">Reset Password Now</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-@app.route('/api/reset-password', methods=['POST'])
-def reset_password():
-    data = request.json or {}
-    username = data.get('username', '').strip()
-    new_password = data.get('new_password', '').strip()
-    pin = data.get('pin', '').strip()
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentUser = null;
+let allProducts = [];
+let rawMarketplaceItems = [];
+let activeStatusFilter = 'ALL';
+let activeAdjustmentProdId = null;
+let activeActionType = 'RECEIVE';
+let lastLogId = null;
+let chartInstance = null;
+let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj, toastObj;
+
+document.addEventListener('DOMContentLoaded', () => {
+    stockModalObj = new bootstrap.Modal(document.getElementById('stockActionModal'));
+    detailModalObj = new bootstrap.Modal(document.getElementById('productDetailModal'));
+    forgotModalObj = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+    addProdModalObj = new bootstrap.Modal(document.getElementById('addProductModal'));
+    editProdModalObj = new bootstrap.Modal(document.getElementById('editProductModal'));
+    toastObj = new bootstrap.Toast(document.getElementById('actionToast'), {delay: 6000});
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+        if(e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+            e.preventDefault();
+            document.getElementById('invSearch').focus();
+        }
+    });
+});
+
+function showToast(msg, canUndo = false, logId = null) {
+    document.getElementById('toastMessage').innerText = msg;
+    const undoBtn = document.getElementById('toastUndoBtn');
+    if(canUndo && logId) {
+        lastLogId = logId;
+        undoBtn.classList.remove('d-none');
+    } else {
+        undoBtn.classList.add('d-none');
+    }
+    toastObj.show();
+}
+
+async function triggerUndo() {
+    if(!lastLogId) return;
+    const res = await fetch('/api/products/undo', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({log_id: lastLogId})
+    });
+    const data = await res.json();
+    if(res.ok) {
+        showToast(data.message, false);
+        loadProducts();
+        loadWorkerStats();
+        if(currentUser.role === 'master') loadDashboard();
+    }
+}
+
+function openForgotModal() { forgotModalObj.show(); }
+function openAddProductModal() { addProdModalObj.show(); }
+
+async function submitNewProduct() {
+    const desc = document.getElementById('newDesc').value.trim();
+    if(!desc) { alert('Please enter product description'); return; }
     
-    if pin != MASTER_RESET_PIN:
-        return jsonify({"status": "error", "message": "Invalid Master PIN"}), 403
-    
-    if not username or not new_password:
-        return jsonify({"status": "error", "message": "All fields are required"}), 400
+    const body = {
+        description: desc,
+        brand: document.getElementById('newBrand').value.trim() || 'GENERAL',
+        country: document.getElementById('newCountry').value.trim() || 'INDIA',
+        hsn_code: document.getElementById('newHsn').value.trim(),
+        opening_stock: parseInt(document.getElementById('newOpening').value) || 0,
+        price: parseFloat(document.getElementById('newPrice').value) || 0,
+        mrp: parseFloat(document.getElementById('newMrp').value) || 0,
+        tax: 0.18
+    };
 
-    conn = get_db()
-    cursor = conn.cursor()
-    user = cursor.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    if not user:
-        conn.close()
-        return jsonify({"status": "error", "message": "User not found"}), 404
+    const res = await fetch('/api/products/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(res.ok) {
+        showToast(data.message);
+        addProdModalObj.hide();
+        loadProducts();
+        if(currentUser.role === 'master') loadDashboard();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+function openEditModal(prodId) {
+    const p = allProducts.find(x => x.id === prodId);
+    if(!p) return;
+    document.getElementById('editProdId').value = p.id;
+    document.getElementById('editDesc').value = p.description;
+    document.getElementById('editBrand').value = p.brand;
+    document.getElementById('editCountry').value = p.country;
+    document.getElementById('editHsn').value = p.hsn_code || '';
+    document.getElementById('editExpiry').value = p.expiry_date || '';
+    document.getElementById('editPrice').value = p.price;
+    document.getElementById('editMrp').value = p.mrp;
+    editProdModalObj.show();
+}
+
+async function submitEditProduct() {
+    const id = document.getElementById('editProdId').value;
+    const body = {
+        id: parseInt(id),
+        description: document.getElementById('editDesc').value.trim(),
+        brand: document.getElementById('editBrand').value.trim(),
+        country: document.getElementById('editCountry').value.trim(),
+        hsn_code: document.getElementById('editHsn').value.trim(),
+        expiry_date: document.getElementById('editExpiry').value.trim(),
+        price: parseFloat(document.getElementById('editPrice').value) || 0,
+        mrp: parseFloat(document.getElementById('editMrp').value) || 0
+    };
+
+    const res = await fetch('/api/products/edit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(res.ok) {
+        showToast(data.message);
+        editProdModalObj.hide();
+        loadProducts();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+async function deleteProduct(prodId, desc) {
+    if(!confirm(`Are you sure you want to PERMANENTLY DELETE product #${prodId}?\n"${desc}"`)) return;
+    const res = await fetch(`/api/products/delete/${prodId}`, {method: 'DELETE'});
+    const data = await res.json();
+    if(res.ok) {
+        showToast(data.message);
+        loadProducts();
+        loadDashboard();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+async function handlePasswordReset() {
+    const u = document.getElementById('resetUsername').value.trim();
+    const pin = document.getElementById('resetPin').value.trim();
+    const newPass = document.getElementById('resetNewPassword').value.trim();
+    if(!u || !pin || !newPass) { alert('Please fill all fields'); return; }
+    
+    const res = await fetch('/api/reset-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: u, pin: pin, new_password: newPass})
+    });
+    const data = await res.json();
+    if(res.ok) {
+        alert(data.message);
+        forgotModalObj.hide();
+    } else {
+        alert('Error: ' + data.message);
+    }
+}
+
+async function handleLogin() {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+    const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: u, password: p})
+    });
+    if(res.ok) {
+        currentUser = await res.json();
+        document.getElementById('loginSection').classList.add('d-none');
+        document.getElementById('appSection').classList.remove('d-none');
+        document.getElementById('navUserLabel').innerText = currentUser.username;
+        document.getElementById('navRoleLabel').innerText = currentUser.role.toUpperCase() + ' ACCESS';
         
-    cursor.execute("UPDATE users SET password = ? WHERE username = ?", (new_password, username))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Password reset successfully!"})
+        if(currentUser.role !== 'master') {
+            document.querySelectorAll('.master-only').forEach(el => el.classList.add('d-none'));
+            const invLink = document.getElementById('inventoryPillLink');
+            const tab = new bootstrap.Tab(invLink);
+            tab.show();
+        } else {
+            loadDashboard();
+            setInterval(loadDashboard, 15000);
+        }
+        loadWorkerStats();
+        loadProducts();
+        loadLedger();
+    } else {
+        alert('Invalid login credentials');
+    }
+}
 
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({"status": "success"})
+async function loadWorkerStats() {
+    const res = await fetch('/api/worker-stats');
+    const data = await res.json();
+    document.getElementById('workerTodayReceived').innerText = Number(data.today_received).toLocaleString();
+    document.getElementById('workerTodayIssued').innerText = Number(data.today_issued).toLocaleString();
+    document.getElementById('workerTodayOps').innerText = data.today_ops;
+}
 
-@app.route('/api/worker-stats', methods=['GET'])
-def worker_stats():
-    username = session.get('username', '')
-    today_ist = get_current_ist_date()
-    conn = get_db()
-    today_received = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'RECEIVE' AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
-    today_issued = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'ISSUE' AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
-    today_ops = conn.execute("SELECT COUNT(*) FROM activity_log WHERE username = ? AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
-    conn.close()
-    return jsonify({
-        "today_received": today_received,
-        "today_issued": today_issued,
-        "today_ops": today_ops
-    })
+async function loadDashboard() {
+    const res = await fetch('/api/stats');
+    const stats = await res.json();
+    document.getElementById('statTotalItems').innerText = stats.total_items;
+    document.getElementById('statTotalQty').innerText = Number(stats.total_qty).toLocaleString();
+    document.getElementById('statLowStock').innerText = stats.low_stock;
+    document.getElementById('statGlobalSkus').innerText = stats.total_global_skus;
+    document.getElementById('statAssetVal').innerText = '₹' + Number(stats.total_inventory_val).toLocaleString();
+    document.getElementById('statDamageVal').innerText = '₹' + Number(stats.total_damage_loss).toLocaleString();
 
-@app.route('/api/stats', methods=['GET'])
-def get_stats():
-    conn = get_db()
-    total_items = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
-    total_qty = conn.execute("SELECT SUM(actual_stock) FROM products").fetchone()[0] or 0
-    low_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock <= 10").fetchone()[0]
-    pending_tasks = conn.execute("SELECT COUNT(*) FROM products WHERE status = 'Pending'").fetchone()[0]
-    total_global_skus = conn.execute("SELECT COUNT(*) FROM marketplace_products").fetchone()[0]
-    
-    # Financial Valuations
-    valuation_row = conn.execute("SELECT SUM(actual_stock * price_after_tax), SUM(damage * price_after_tax) FROM products").fetchone()
-    total_inventory_val = valuation_row[0] or 0
-    total_damage_loss = valuation_row[1] or 0
-    
-    top_stocks = conn.execute("SELECT description, actual_stock FROM products ORDER BY actual_stock DESC LIMIT 6").fetchall()
-    conn.close()
-    return jsonify({
-        "total_items": total_items,
-        "total_qty": total_qty,
-        "low_stock": low_stock,
-        "pending_tasks": pending_tasks,
-        "total_global_skus": total_global_skus,
-        "total_inventory_val": round(total_inventory_val, 2),
-        "total_damage_loss": round(total_damage_loss, 2),
-        "top_stocks": [dict(r) for r in top_stocks]
-    })
+    const ctx = document.getElementById('topStockChart').getContext('2d');
+    if(chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stats.top_stocks.map(s => s.description.length > 16 ? s.description.substring(0,16)+'...' : s.description),
+            datasets: [{
+                label: 'Physical Units',
+                data: stats.top_stocks.map(s => s.actual_stock),
+                backgroundColor: '#2563eb',
+                borderRadius: 6
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
 
-@app.route('/api/products', methods=['GET'])
-def get_products():
-    conn = get_db()
-    products = conn.execute("SELECT * FROM products ORDER BY id ASC").fetchall()
-    conn.close()
-    return jsonify([dict(p) for p in products])
+    const logRes = await fetch('/api/ledger');
+    const logs = await logRes.json();
+    document.getElementById('liveFeedBody').innerHTML = logs.slice(0, 8).map(l => {
+        const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
+        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        return `
+        <tr>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
+            <td><strong class="small">${l.product_desc}</strong><br><span class="text-muted" style="font-size:0.75rem">${l.details || ''}</span></td>
+            <td class="text-end small">${userBadge}<br><span class="text-muted" style="font-size:0.7rem">${l.timestamp}</span></td>
+        </tr>
+        `;
+    }).join('');
+}
 
-@app.route('/api/products/add', methods=['POST'])
-def add_product():
-    if 'username' not in session:
-        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+async function loadProducts() {
+    const res = await fetch('/api/products');
+    allProducts = await res.json();
     
-    data = request.json or {}
-    desc = data.get('description', '').strip()
-    if not desc:
-        return jsonify({"status": "error", "message": "Product description is required"}), 400
-    
-    hsn = data.get('hsn_code', '').strip()
-    brand = data.get('brand', 'GENERAL').strip()
-    country = data.get('country', 'INDIA').strip()
-    price = float(data.get('price', 0) or 0)
-    tax = float(data.get('tax', 0.18) or 0.18)
-    price_after_tax = round(price * (1 + tax), 2)
-    mrp = float(data.get('mrp', 0) or 0)
-    per_petti = int(data.get('per_petti', 0) or 0)
-    expiry = data.get('expiry_date', '').strip()
-    opening = int(data.get('opening_stock', 0) or 0)
-    
-    status = "Pending" if opening <= 5 else "Completed"
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO products (hsn_code, country, brand, description, price, tax, price_after_tax, mrp, per_petti, expiry_date, opening_stock, actual_stock, damage, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-    ''', (hsn, country, brand, desc, price, tax, price_after_tax, mrp, per_petti, expiry, opening, opening, status))
-    prod_id = cursor.lastrowid
-    
-    cursor.execute('''
-        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-        VALUES (?, ?, ?, 'NEW_ITEM', ?, 0, ?, 'Product Added to Catalog', ?)
-    ''', (prod_id, desc, session['username'], opening, opening, get_current_ist_time()))
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Product added successfully!"})
+    document.getElementById('countAll').innerText = allProducts.length;
+    document.getElementById('countInStock').innerText = allProducts.filter(p => p.actual_stock > 10).length;
+    document.getElementById('countLowStock').innerText = allProducts.filter(p => p.actual_stock > 0 && p.actual_stock <= 10).length;
+    document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
+    document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
-@app.route('/api/products/delete/<int:prod_id>', methods=['DELETE'])
-def delete_product(prod_id):
-    if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Only Master can delete products from catalog"}), 403
+    const brandSelect = document.getElementById('invBrandFilter');
+    const brands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
+    brandSelect.innerHTML = '<option value="">All Brands</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+
+    const ledgerSelect = document.getElementById('ledgerProductSelect');
+    ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
+        allProducts.map(p => `<option value="${p.id}">#${p.id} - ${p.description}</option>`).join('');
+
+    filterInventory();
+}
+
+function renderInventory(items) {
+    const tbody = document.getElementById('inventoryTableBody');
+    if(items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No matching inventory products found.</td></tr>`;
+        return;
+    }
+
+    const isMaster = currentUser && currentUser.role === 'master';
+
+    tbody.innerHTML = items.map(p => {
+        const stockClass = p.actual_stock > 10 ? 'text-success' : (p.actual_stock > 0 ? 'text-warning' : 'text-danger');
+        const statusBadge = p.status === 'Completed' ? 'badge bg-success-subtle text-success' : 'badge bg-warning-subtle text-warning';
+        return `
+        <tr>
+            <td class="text-muted fw-bold">#${p.id}</td>
+            <td>
+                <span class="fw-bold d-block text-dark">${p.description}</span>
+                <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong class="text-secondary">${p.expiry_date || 'N/A'}</strong></span>
+            </td>
+            <td>
+                <span class="badge bg-light text-dark border">${p.brand}</span>
+                <span class="text-muted small d-block">${p.country}</span>
+            </td>
+            <td>
+                <span class="fw-semibold">₹${p.price}</span>
+                <span class="text-muted small d-block">MRP: ₹${p.mrp}</span>
+            </td>
+            <td class="text-center">
+                <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
+                <span class="text-muted small d-block" style="font-size:0.75rem;">Opening: ${p.opening_stock}</span>
+            </td>
+            <td class="text-center"><span class="badge bg-danger-subtle text-danger">${p.damage}</span></td>
+            <td><span class="${statusBadge} px-2 py-1">${p.status}</span></td>
+            <td class="text-center no-print">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-danger fw-semibold px-2" onclick="openStockModal(${p.id}, 'ISSUE')"><i class="bi bi-dash"></i> Issue</button>
+                    <button class="btn btn-sm btn-outline-success fw-semibold px-2" onclick="openStockModal(${p.id}, 'RECEIVE')"><i class="bi bi-plus"></i> Receive</button>
+                    <button class="btn btn-sm btn-outline-warning fw-semibold px-1" title="Mark Damaged" onclick="openStockModal(${p.id}, 'DAMAGE')"><i class="bi bi-exclamation-octagon"></i></button>
+                </div>
+            </td>
+            <td class="text-center no-print">
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-light border text-primary" onclick="openDetailModal(${p.id})" title="View Details"><i class="bi bi-info-circle"></i></button>
+                    <button class="btn btn-sm btn-light border text-secondary" onclick="viewSingleProductLedger(${p.id})" title="View Ledger"><i class="bi bi-journal-text"></i></button>
+                    ${isMaster ? `
+                        <button class="btn btn-sm btn-light border text-success" onclick="openEditModal(${p.id})" title="Edit Details"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-light border text-danger" onclick="deleteProduct(${p.id}, '${p.description.replace(/'/g, "\\'")}')" title="Delete Product"><i class="bi bi-trash"></i></button>
+                    ` : ''}
+                </div>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function setStatusFilter(filter, btn) {
+    activeStatusFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.remove('btn-primary', 'btn-success', 'btn-warning', 'btn-danger', 'btn-secondary');
+        b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-primary');
+    filterInventory();
+}
+
+function clearSearch() {
+    document.getElementById('invSearch').value = '';
+    filterInventory();
+}
+
+function filterInventory() {
+    const q = document.getElementById('invSearch').value.toLowerCase();
+    const brand = document.getElementById('invBrandFilter').value;
     
-    conn = get_db()
-    cursor = conn.cursor()
-    prod = cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
-    if not prod:
-        conn.close()
-        return jsonify({"status": "error", "message": "Product not found"}), 404
+    const filtered = allProducts.filter(p => {
+        const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || p.brand.toLowerCase().includes(q);
+        const matchesBrand = brand === '' || p.brand === brand;
         
-    cursor.execute("DELETE FROM products WHERE id = ?", (prod_id,))
-    cursor.execute('''
-        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-        VALUES (?, ?, ?, 'DELETE', 0, ?, 0, 'Product Removed by Master', ?)
-    ''', (prod_id, prod['description'], session['username'], prod['actual_stock'], get_current_ist_time()))
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": f"Product #{prod_id} successfully deleted"})
-
-@app.route('/api/products/edit', methods=['POST'])
-def edit_product():
-    if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Only Master can edit product details"}), 403
+        let matchesStatus = true;
+        if(activeStatusFilter === 'IN_STOCK') matchesStatus = p.actual_stock > 10;
+        else if(activeStatusFilter === 'LOW_STOCK') matchesStatus = p.actual_stock > 0 && p.actual_stock <= 10;
+        else if(activeStatusFilter === 'OUT_OF_STOCK') matchesStatus = p.actual_stock === 0;
+        else if(activeStatusFilter === 'PENDING') matchesStatus = p.status === 'Pending';
         
-    data = request.json or {}
-    prod_id = data.get('id')
-    desc = data.get('description', '').strip()
-    if not desc:
-        return jsonify({"status": "error", "message": "Description cannot be empty"}), 400
-        
-    hsn = data.get('hsn_code', '').strip()
-    brand = data.get('brand', 'GENERAL').strip()
-    country = data.get('country', 'INDIA').strip()
-    price = float(data.get('price', 0) or 0)
-    mrp = float(data.get('mrp', 0) or 0)
-    tax = float(data.get('tax', 0.18) or 0.18)
-    price_after_tax = round(price * (1 + tax), 2)
-    per_petti = int(data.get('per_petti', 0) or 0)
-    expiry = data.get('expiry_date', '').strip()
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE products SET 
-            description = ?, hsn_code = ?, brand = ?, country = ?, 
-            price = ?, tax = ?, price_after_tax = ?, mrp = ?, 
-            per_petti = ?, expiry_date = ?
-        WHERE id = ?
-    ''', (desc, hsn, brand, country, price, tax, price_after_tax, mrp, per_petti, expiry, prod_id))
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Product updated successfully!"})
+        return matchesQuery && matchesBrand && matchesStatus;
+    });
+    renderInventory(filtered);
+}
 
-@app.route('/api/products/adjust', methods=['POST'])
-def adjust_stock():
-    if 'username' not in session:
-        return jsonify({"status": "error", "message": "Unauthorized"}), 401
-    
-    data = request.json or {}
-    prod_id = data.get('id')
-    mode = data.get('mode', 'STOCK')
-    change = int(data.get('change', 0))
-    remarks = data.get('remarks', '').strip()
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    prod = cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)).fetchone()
-    if not prod:
-        conn.close()
-        return jsonify({"status": "error", "message": "Product not found"}), 404
-    
-    prev_stock = prod['actual_stock']
-    prev_damage = prod['damage']
-    
-    if mode == 'DAMAGE':
-        if change > prev_stock:
-            conn.close()
-            return jsonify({"status": "error", "message": f"Cannot mark {change} as damaged. Only {prev_stock} available in stock!"}), 400
-        new_stock = prev_stock - change
-        new_damage = prev_damage + change
-        status = "Pending" if new_stock <= 5 else "Completed"
-        cursor.execute("UPDATE products SET actual_stock = ?, damage = ?, status = ? WHERE id = ?", (new_stock, new_damage, status, prod_id))
-        detail_str = remarks if remarks else f"Moved {change} units to Damaged/Defective"
-        cursor.execute('''
-            INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-            VALUES (?, ?, ?, 'DAMAGE', ?, ?, ?, ?, ?)
-        ''', (prod_id, prod['description'], session['username'], change, prev_stock, new_stock, detail_str, get_current_ist_time()))
-        log_id = cursor.lastrowid
-    else:
-        action_type = "RECEIVE" if change > 0 else "ISSUE"
-        if change < 0 and abs(change) > prev_stock:
-            conn.close()
-            return jsonify({"status": "error", "message": f"Insufficient Stock! Available: {prev_stock}, Requested: {abs(change)}"}), 400
-            
-        new_stock = max(0, prev_stock + change)
-        status = "Pending" if new_stock <= 5 else "Completed"
-        cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (new_stock, status, prod_id))
-        detail_str = remarks if remarks else f"{session['username']} {action_type}D {abs(change)} units"
-        cursor.execute('''
-            INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (prod_id, prod['description'], session['username'], action_type, abs(change), prev_stock, new_stock, detail_str, get_current_ist_time()))
-        log_id = cursor.lastrowid
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "new_stock": new_stock, "log_id": log_id, "prev_stock": prev_stock, "prod_id": prod_id})
+function openStockModal(prodId, defaultAction) {
+    const prod = allProducts.find(p => p.id === prodId);
+    if(!prod) return;
+    activeAdjustmentProdId = prodId;
+    document.getElementById('stockModalTitle').innerText = `${defaultAction === 'RECEIVE' ? '📥 Receive Stock' : (defaultAction === 'ISSUE' ? '📤 Issue Stock' : '⚠️ Mark Damaged Stock')}`;
+    document.getElementById('stockModalDesc').innerText = `#${prod.id} - ${prod.description}`;
+    document.getElementById('stockModalCurrent').innerText = prod.actual_stock;
+    document.getElementById('modalQtyInput').value = "1";
+    document.getElementById('modalRemarksInput').value = "";
+    setActionType(defaultAction);
+    stockModalObj.show();
+}
 
-# Instant Undo Route
-@app.route('/api/products/undo', methods=['POST'])
-def undo_adjustment():
-    if 'username' not in session:
-        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+function setActionType(type) {
+    activeActionType = type;
+    const btnRec = document.getElementById('btnActionReceive');
+    const btnIss = document.getElementById('btnActionIssue');
+    const btnDam = document.getElementById('btnActionDamage');
     
-    data = request.json or {}
-    log_id = data.get('log_id')
+    [btnRec, btnIss, btnDam].forEach(b => b.classList.remove('active', 'btn-success', 'btn-danger', 'btn-warning', 'text-white'));
+    btnRec.classList.add('btn-outline-success');
+    btnIss.classList.add('btn-outline-danger');
+    btnDam.classList.add('btn-outline-warning');
     
-    conn = get_db()
-    cursor = conn.cursor()
-    log = cursor.execute("SELECT * FROM activity_log WHERE id = ?", (log_id,)).fetchone()
-    if not log:
-        conn.close()
-        return jsonify({"status": "error", "message": "Transaction log not found to undo"}), 404
-        
-    prod_id = log['product_id']
-    prev_stock = log['prev_stock']
-    status = "Pending" if prev_stock <= 5 else "Completed"
+    if(type === 'RECEIVE') {
+        btnRec.classList.add('btn-success', 'text-white', 'active');
+        btnRec.classList.remove('btn-outline-success');
+    } else if(type === 'ISSUE') {
+        btnIss.classList.add('btn-danger', 'text-white', 'active');
+        btnIss.classList.remove('btn-outline-danger');
+    } else {
+        btnDam.classList.add('btn-warning', 'text-dark', 'active');
+        btnDam.classList.remove('btn-outline-warning');
+    }
+}
+
+function setQty(val) { document.getElementById('modalQtyInput').value = val; }
+
+async function submitStockAdjustment() {
+    const qty = parseInt(document.getElementById('modalQtyInput').value);
+    const remarks = document.getElementById('modalRemarksInput').value.trim();
+    if(isNaN(qty) || qty <= 0) { alert('Please enter a valid quantity'); return; }
     
-    cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (prev_stock, status, prod_id))
-    cursor.execute('''
-        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-        VALUES (?, ?, ?, 'UNDO', ?, ?, ?, 'Undo Action Applied', ?)
-    ''', (prod_id, log['product_desc'], session['username'], log['quantity'], log['new_stock'], prev_stock, get_current_ist_time()))
+    let changeVal = qty;
+    let mode = 'STOCK';
+    if(activeActionType === 'ISSUE') changeVal = -qty;
+    else if(activeActionType === 'DAMAGE') mode = 'DAMAGE';
+
+    const res = await fetch('/api/products/adjust', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: activeAdjustmentProdId, change: changeVal, mode: mode, remarks: remarks})
+    });
+    const data = await res.json();
+    if(res.ok) {
+        stockModalObj.hide();
+        showToast(`${activeActionType} operation successful!`, true, data.log_id);
+        loadProducts();
+        loadWorkerStats();
+        if(currentUser.role === 'master') loadDashboard();
+    } else {
+        alert(data.message || 'Operation failed');
+    }
+}
+
+function openDetailModal(prodId) {
+    const p = allProducts.find(x => x.id === prodId);
+    if(!p) return;
+    document.getElementById('detailModalTitle').innerText = p.description;
+    document.getElementById('detailModalBody').innerHTML = `
+        <div class="row g-2">
+            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong>${p.hsn_code || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong>${p.brand} (${p.country})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Price / MRP</small><strong>₹${p.price} (MRP: ₹${p.mrp})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Tax % / Price After Tax</small><strong>${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong>${p.per_petti || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong>${p.expiry_date || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong>${p.opening_stock}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Damaged Units</small><strong class="text-danger">${p.damage}</strong></div>
+        </div>
+    `;
+    detailModalObj.show();
+}
+
+async function loadLedger(productId = '') {
+    const url = productId ? `/api/ledger?product_id=${productId}` : '/api/ledger';
+    const res = await fetch(url);
+    const logs = await res.json();
+    const tbody = document.getElementById('fullLedgerBody');
+    if(logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history available.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = logs.map(l => {
+        const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
+        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        return `
+        <tr>
+            <td class="small text-muted">${l.timestamp}</td>
+            <td><strong>${l.product_desc}</strong></td>
+            <td>${userBadge}</td>
+            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
+            <td class="fw-bold">${l.quantity}</td>
+            <td class="text-muted">${l.prev_stock}</td>
+            <td class="fw-bold text-primary">${l.new_stock}</td>
+            <td class="small text-muted">${l.details || ''}</td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function loadProductLedger() {
+    const prodId = document.getElementById('ledgerProductSelect').value;
+    loadLedger(prodId);
+}
+
+function viewSingleProductLedger(prodId) {
+    document.getElementById('ledgerProductSelect').value = prodId;
+    const ledgerTabTrigger = new bootstrap.Tab(document.querySelector('a[href="#ledgerTab"]'));
+    ledgerTabTrigger.show();
+    loadLedger(prodId);
+}
+
+function exportLedgerCsv() {
+    const prodId = document.getElementById('ledgerProductSelect').value;
+    window.location.href = `/api/export/ledger-csv?product_id=${prodId}`;
+}
+
+async function loadMarketplaceData() {
+    const mp = document.getElementById('marketplaceSelect').value;
+    const res = await fetch(`/api/marketplaces/products?marketplace=${mp}`);
+    rawMarketplaceItems = await res.json();
+    filterMarketplaceItems();
+}
+
+function filterMarketplaceItems() {
+    const q = (document.getElementById('marketSearchInput').value || '').toLowerCase().trim();
+    const marginMode = document.getElementById('marginFilterSelect').value;
     
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success", "message": "Action successfully reverted!"})
+    const items = rawMarketplaceItems.filter(item => {
+        const matchesQ = (item.sku && item.sku.toLowerCase().includes(q)) || (item.asin && item.asin.toLowerCase().includes(q));
+        let matchesMargin = true;
+        if(marginMode === 'LOSS') matchesMargin = item.margin < 0;
+        else if(marginMode === 'PROFIT') matchesMargin = item.margin >= 0;
+        return matchesQ && matchesMargin;
+    });
+    renderMarketplaceTable(items);
+}
 
-@app.route('/api/marketplaces/products', methods=['GET'])
-def get_marketplace_products():
-    mp = request.args.get('marketplace', 'GTUS')
-    conn = get_db()
-    items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
-    conn.close()
-    return jsonify([dict(i) for i in items])
+function renderMarketplaceTable(items) {
+    const tbody = document.getElementById('marketplaceTableBody');
+    if(items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No matching marketplace pricing records found.</td></tr>`;
+        return;
+    }
 
-@app.route('/api/ledger', methods=['GET'])
-def get_ledger():
-    prod_id = request.args.get('product_id')
-    conn = get_db()
-    if prod_id:
-        logs = conn.execute("SELECT * FROM activity_log WHERE product_id = ? ORDER BY id DESC", (prod_id,)).fetchall()
-    else:
-        logs = conn.execute("SELECT * FROM activity_log ORDER BY id DESC LIMIT 150").fetchall()
-    conn.close()
-    return jsonify([dict(l) for l in logs])
+    tbody.innerHTML = items.map((item, idx) => {
+        const curr = item.currency_symbol || '$';
+        const isNeg = item.margin < 0;
+        return `
+        <tr class="${isNeg ? 'negative-margin-row' : ''}">
+            <td>${idx + 1}</td>
+            <td>
+                <strong>${item.sku}</strong><br>
+                <span class="text-muted small">ASIN: ${item.asin || 'N/A'}</span>
+            </td>
+            <td><strong>${item.selling_price ? curr + item.selling_price.toFixed(2) : '-'}</strong></td>
+            <td>${item.fba_fee ? curr + item.fba_fee.toFixed(2) : '-'}</td>
+            <td>${item.conv_rate || '-'}</td>
+            <td>${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</td>
+            <td><span class="badge bg-light text-dark border">${item.min_selling_rate ? curr + item.min_selling_rate.toFixed(2) : '-'}</span></td>
+            <td class="${!isNeg ? 'text-success fw-bold' : 'text-danger fw-bold'}">${item.margin ? item.margin.toFixed(2) + '%' : '-'}</td>
+            <td class="no-print">
+                ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
 
-# ----------------- CSV EXPORT SUITE -----------------
+function exportMarketplaceCsv() {
+    const mp = document.getElementById('marketplaceSelect').value;
+    window.location.href = `/api/export/marketplace-csv?marketplace=${mp}`;
+}
 
-@app.route('/api/export/warehouse-csv')
-def export_warehouse_csv():
-    conn = get_db()
-    products = conn.execute("SELECT * FROM products ORDER BY id ASC").fetchall()
-    conn.close()
-    
-    def generate():
-        yield "ID,HSN Code,Country,Brand,Description,Price,Tax,Price After Tax,MRP,Units Per Petti,Expiry Date,Opening Stock,Actual Stock,Damage Units,Status\n"
-        for p in products:
-            desc = p["description"].replace('"', '""')
-            yield f'"{p["id"]}","{p["hsn_code"]}","{p["country"]}","{p["brand"]}","{desc}","{p["price"]}","{p["tax"]}","{p["price_after_tax"]}","{p["mrp"]}","{p["per_petti"]}","{p["expiry_date"]}","{p["opening_stock"]}","{p["actual_stock"]}","{p["damage"]}","{p["status"]}"\n'
-            
-    return Response(generate(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=Warehouse_Stock_Report.csv"})
-
-@app.route('/api/export/marketplace-csv')
-def export_marketplace_csv():
-    mp = request.args.get('marketplace', 'GTUS')
-    conn = get_db()
-    items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
-    conn.close()
-    
-    def generate():
-        yield "ID,Marketplace,Currency,SKU,ASIN,Selling Price,FBA Fee,Purchase Price,Conversion Rate,Purchase Rate,Freight,Min Selling Price,Profit Margin %,Product Link\n"
-        for item in items:
-            sku = item["sku"].replace('"', '""')
-            yield f'"{item["id"]}","{item["marketplace_label"]}","{item["currency_symbol"]}","{sku}","{item["asin"]}","{item["selling_price"]}","{item["fba_fee"]}","{item["purchase_price"]}","{item["conv_rate"]}","{item["purchase_rate"]}","{item["freight"]}","{item["min_selling_rate"]}","{item["margin"]}","{item["product_link"]}"\n'
-            
-    return Response(generate(), mimetype="text/csv", headers={"Content-Disposition": f"attachment; filename=Marketplace_{mp}_Pricing_Report.csv"})
-
-@app.route('/api/export/ledger-csv')
-def export_ledger_csv():
-    prod_id = request.args.get('product_id', '')
-    conn = get_db()
-    if prod_id:
-        logs = conn.execute("SELECT * FROM activity_log WHERE product_id = ? ORDER BY id DESC", (prod_id,)).fetchall()
-    else:
-        logs = conn.execute("SELECT * FROM activity_log ORDER BY id DESC").fetchall()
-    conn.close()
-    
-    def generate():
-        yield "ID,Product ID,Product Name,Operator,Action,Quantity,Previous Stock,New Balance,Audit Details,Timestamp (IST)\n"
-        for l in logs:
-            pname = l["product_desc"].replace('"', '""')
-            det = (l["details"] or "").replace('"', '""')
-            yield f'"{l["id"]}","{l["product_id"]}","{pname}","{l["username"]}","{l["action"]}","{l["quantity"]}","{l["prev_stock"]}","{l["new_stock"]}","{det}","{l["timestamp"]}"\n'
-            
-    return Response(generate(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=Complete_Audit_Ledger.csv"})
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+function handleLogout() {
+    fetch('/api/logout', {method: 'POST'}).then(() => location.reload());
+}
+</script>
+</body>
+</html>
