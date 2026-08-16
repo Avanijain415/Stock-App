@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Warehouse & Global Margin Hub</title>
-    <!-- Bootstrap 5, Icons & Fonts -->
+    <title>Enterprise Warehouse & Global Margin Hub Pro</title>
+    <!-- Bootstrap 5, Icons & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* ---------------- ROOT THEME VARIABLES ---------------- */
         :root {
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
+            --text-heading: #1e293b;
             --text-muted: #64748b;
-            --text-heading: #334155;
             --nav-bg: #0f172a;
             --border-color: #e2e8f0;
             --input-bg: #ffffff;
+            --input-border: #cbd5e1;
             --primary: #2563eb;
             --primary-rgb: 37, 99, 235;
             --success: #10b981;
@@ -26,71 +28,93 @@
             --warning: #f59e0b;
             --badge-bg: #f1f5f9;
             --table-hover: #f8fafc;
+            --table-row-text: #0f172a;
+            --table-sub-text: #475569;
         }
+
         [data-theme="dark"] {
-            --bg-body: #090d16;
-            --card-bg: #131b2e;
+            --bg-body: #070b14;
+            --card-bg: #0f172a;
             --text-main: #f8fafc;
+            --text-heading: #ffffff;
             --text-muted: #94a3b8;
-            --text-heading: #cbd5e1;
-            --nav-bg: #0b1120;
+            --nav-bg: #090d16;
             --border-color: #1e293b;
-            --input-bg: #0b1120;
+            --input-bg: #131d35;
+            --input-border: #2a3b5c;
             --primary: #3b82f6;
             --primary-rgb: 59, 130, 246;
             --badge-bg: #1e293b;
-            --table-hover: #17223b;
+            --table-hover: #16223b;
+            --table-row-text: #f8fafc;
+            --table-sub-text: #94a3b8;
         }
-        
+
+        /* Global Reset with Highest Specificity */
         body { 
             background-color: var(--bg-body) !important; 
             color: var(--text-main) !important; 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             transition: background-color 0.2s ease, color 0.2s ease; 
         }
-        
-        .navbar-custom { background: var(--nav-bg) !important; border-bottom: 1px solid var(--border-color); }
+
+        .navbar-custom { 
+            background-color: var(--nav-bg) !important; 
+            border-bottom: 1px solid var(--border-color) !important; 
+        }
+
         .card { 
             background-color: var(--card-bg) !important; 
             border: 1px solid var(--border-color) !important; 
             border-radius: 14px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
         }
-        
-        /* High Contrast Text Utilities */
-        .text-card-label { color: var(--text-heading) !important; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; }
-        .text-card-sub { color: var(--text-muted) !important; font-size: 0.8rem; }
+
+        /* Text Contrast Enforcements */
+        h1, h2, h3, h4, h5, h6, .card-title, .modal-title { color: var(--text-heading) !important; }
+        .text-card-label { color: #94a3b8 !important; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.6px; text-transform: uppercase; }
+        [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
+        .text-card-sub { color: var(--text-muted) !important; font-size: 0.82rem; }
         .text-muted { color: var(--text-muted) !important; }
-        
-        /* Inputs & Dropdowns */
+        .text-dark { color: var(--text-heading) !important; }
+
+        /* Form Inputs & Selects in Dark/Light */
         .form-control, .form-select, .input-group-text { 
             background-color: var(--input-bg) !important; 
             color: var(--text-main) !important; 
-            border-color: var(--border-color) !important; 
+            border: 1px solid var(--input-border) !important; 
+            font-weight: 500;
         }
-        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.7; }
+        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.8; }
         .form-control:focus, .form-select:focus {
             background-color: var(--input-bg) !important;
             color: var(--text-main) !important;
             border-color: var(--primary) !important;
-            box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.15) !important;
+            box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25) !important;
         }
-        
-        /* Nav Pills */
-        .nav-pills .nav-link { color: var(--text-muted) !important; font-weight: 600; border-radius: 10px; padding: 9px 16px; font-size: 0.9rem; transition: all 0.2s; }
+        .form-select option {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+        }
+
+        /* Nav Pills Navigation */
+        .nav-pills .nav-link { 
+            color: var(--text-muted) !important; 
+            font-weight: 600; 
+            border-radius: 10px; 
+            padding: 9px 16px; 
+            font-size: 0.9rem; 
+            transition: all 0.2s; 
+        }
         .nav-pills .nav-link:hover { color: var(--text-main) !important; background-color: var(--badge-bg); }
         .nav-pills .nav-link.active { background-color: var(--primary) !important; color: #ffffff !important; font-weight: 700; }
-        
-        /* Stat Cards */
-        .stat-card { border-radius: 14px; padding: 18px; position: relative; }
-        
-        /* Filter Buttons */
-        .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
-        [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #cbd5e1 !important; border-color: #334155 !important; }
-        [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: #1e293b !important; color: #fff !important; }
-        
-        /* Tables in Dark Mode */
-        .table { color: var(--text-main) !important; --bs-table-bg: transparent !important; }
+
+        /* Tables & Row Typography */
+        .table { 
+            color: var(--table-row-text) !important; 
+            --bs-table-bg: transparent !important; 
+            margin-bottom: 0;
+        }
         .table th { 
             font-size: 0.78rem; 
             text-transform: uppercase; 
@@ -99,21 +123,50 @@
             background: var(--card-bg) !important; 
             border-bottom: 2px solid var(--border-color) !important; 
         }
-        .table td { border-bottom: 1px solid var(--border-color) !important; }
+        .table td { 
+            color: var(--table-row-text) !important; 
+            border-bottom: 1px solid var(--border-color) !important; 
+            vertical-align: middle;
+        }
         .table-hover tbody tr:hover { background-color: var(--table-hover) !important; }
-        
-        /* Dark Theme Badges & Negative Rows */
-        .badge-subtle-primary { background-color: rgba(59, 130, 246, 0.15); color: #60a5fa !important; }
-        .badge-subtle-success { background-color: rgba(16, 185, 129, 0.15); color: #34d399 !important; }
-        .badge-subtle-danger { background-color: rgba(239, 68, 68, 0.15); color: #f87171 !important; }
-        .badge-subtle-warning { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24 !important; }
-        .badge-subtle-dark { background-color: var(--badge-bg); color: var(--text-heading) !important; border: 1px solid var(--border-color); }
-        
-        .negative-margin-row { background-color: rgba(239, 68, 68, 0.12) !important; }
-        
-        .modal-content { background-color: var(--card-bg) !important; color: var(--text-main) !important; border-radius: 16px; border: 1px solid var(--border-color) !important; }
+        .table strong { color: var(--text-heading) !important; font-weight: 600; }
+        .table small, .table .small-sub { color: var(--table-sub-text) !important; }
+
+        /* Badges & Chips */
+        .badge-subtle-primary { background-color: rgba(59, 130, 246, 0.18) !important; color: #60a5fa !important; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-subtle-success { background-color: rgba(16, 185, 129, 0.18) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-subtle-danger { background-color: rgba(239, 68, 68, 0.18) !important; color: #f87171 !important; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-subtle-warning { background-color: rgba(245, 158, 11, 0.18) !important; color: #fbbf24 !important; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-subtle-dark { background-color: var(--badge-bg) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; }
+
+        /* Negative Margin High-Alert Row */
+        .negative-margin-row { background-color: rgba(239, 68, 68, 0.1) !important; }
+
+        /* Custom Stat Cards Borders */
+        .stat-card-blue { border-left: 4px solid #3b82f6 !important; }
+        .stat-card-red { border-left: 4px solid #ef4444 !important; }
+        .stat-card-yellow { border-left: 4px solid #f59e0b !important; }
+        .stat-card-purple { border-left: 4px solid #a855f7 !important; }
+
+        /* Filter Pills */
+        .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #cbd5e1 !important; border-color: var(--input-border) !important; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: var(--badge-bg) !important; color: #fff !important; }
+
+        /* Buttons High Contrast */
+        [data-theme="dark"] .btn-outline-secondary { color: #cbd5e1 !important; border-color: var(--input-border) !important; }
+        [data-theme="dark"] .btn-outline-secondary:hover { background-color: #1e293b !important; color: #fff !important; }
+        [data-theme="dark"] .btn-outline-success { color: #34d399 !important; border-color: #059669 !important; }
+        [data-theme="dark"] .btn-outline-success:hover { background-color: #059669 !important; color: #fff !important; }
+
+        .modal-content { 
+            background-color: var(--card-bg) !important; 
+            color: var(--text-main) !important; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-color) !important; 
+        }
         .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1080; }
-        
+
         @media print {
             .no-print { display: none !important; }
             .card { border: none !important; box-shadow: none !important; }
@@ -215,30 +268,30 @@
             <div class="tab-pane fade show active master-only" id="dashboardTab">
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary) !important;">
+                        <div class="card p-3 stat-card-blue">
                             <span class="text-card-label">TOTAL INVENTORY ASSET</span>
                             <h3 class="fw-bold my-1 text-primary" id="statAssetVal">₹0.00</h3>
-                            <span class="text-card-sub"><span id="statTotalItems">0</span> SKUs (<span id="statTotalQty">0</span> Units)</span>
+                            <span class="text-card-sub"><span id="statTotalItems" class="fw-bold text-white">0</span> SKUs (<span id="statTotalQty" class="fw-bold text-white">0</span> Units)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger) !important;">
+                        <div class="card p-3 stat-card-red">
                             <span class="text-card-label">DAMAGE LOSS VALUE</span>
                             <h3 class="fw-bold my-1 text-danger" id="statDamageVal">₹0.00</h3>
-                            <span class="text-card-sub">Defective stock evaluation</span>
+                            <span class="text-card-sub text-danger opacity-75">Defective stock evaluation</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning) !important;">
+                        <div class="card p-3 stat-card-yellow">
                             <span class="text-card-label">LOW STOCK WARNINGS</span>
                             <h3 class="fw-bold my-1 text-warning" id="statLowStock">0</h3>
-                            <span class="text-card-sub">Stock &le; 10 units (Replenish)</span>
+                            <span class="text-card-sub text-warning opacity-75">Stock &le; 10 units (Replenish)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid #8b5cf6 !important;">
+                        <div class="card p-3 stat-card-purple">
                             <span class="text-card-label">GLOBAL MARKETPLACE SKUs</span>
-                            <h3 class="fw-bold my-1 text-info" id="statGlobalSkus">0</h3>
+                            <h3 class="fw-bold my-1" style="color: #c084fc !important;" id="statGlobalSkus">0</h3>
                             <span class="text-card-sub">5 International Marketplaces</span>
                         </div>
                     </div>
@@ -309,7 +362,7 @@
                             </select>
                         </div>
                         <div class="col-md-4 text-end d-flex justify-content-end gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Audit Sheet</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Sheet</button>
                             <a href="/api/export/warehouse-csv" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
                             <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="bi bi-plus-lg"></i> Add New SKU</button>
                         </div>
@@ -407,7 +460,7 @@
             <div class="tab-pane fade master-only" id="activityTab">
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger me-2"></i>Live Operator & System Audit Stream</h6>
+                        <h6 class="fw-bold mb-0 text-white"><i class="bi bi-broadcast text-danger me-2"></i>Live Operator & System Audit Stream</h6>
                         <div class="d-flex gap-2">
                             <select id="auditActionFilter" class="form-select form-select-sm" onchange="loadActivityLogs()">
                                 <option value="ALL">All Actions</option>
@@ -931,7 +984,7 @@ async function loadDashboard() {
     document.getElementById('statDamageVal').innerText = '₹' + Number(stats.total_damage_loss || 0).toLocaleString('en-IN', {minimumFractionDigits: 2});
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const textColor = isDark ? '#e2e8f0' : '#475569';
 
     const ctx = document.getElementById('topStockChart').getContext('2d');
     if(topChartInstance) topChartInstance.destroy();
@@ -967,7 +1020,7 @@ async function loadDashboard() {
         return `
         <tr>
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
-            <td><strong class="small">${l.product_desc}</strong></td>
+            <td><strong class="d-block" style="color: var(--text-heading); font-size: 0.88rem;">${l.product_desc}</strong></td>
             <td class="text-end small">${userBadge}</td>
         </tr>
         `;
@@ -978,7 +1031,7 @@ async function loadAnalytics() {
     const res = await fetch('/api/stats');
     const stats = await res.json();
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const textColor = isDark ? '#e2e8f0' : '#475569';
     
     const ctxBrand = document.getElementById('brandChart').getContext('2d');
     if(brandChartInstance) brandChartInstance.destroy();
@@ -988,7 +1041,7 @@ async function loadAnalytics() {
             labels: stats.brand_breakdown.map(b => b.brand),
             datasets: [{
                 data: stats.brand_breakdown.map(b => b.qty),
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7']
             }]
         },
         options: { 
@@ -1043,14 +1096,14 @@ async function loadActivityLogs() {
         const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Migration</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
-            <td class="small text-muted">${l.timestamp}</td>
+            <td class="small" style="color: var(--table-sub-text);">${l.timestamp}</td>
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
-            <td><strong>${l.product_desc}</strong></td>
+            <td><strong style="color: var(--text-heading);">${l.product_desc}</strong></td>
             <td>${userBadge}</td>
-            <td class="fw-bold">${l.quantity}</td>
-            <td class="text-muted fw-semibold">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
+            <td class="fw-bold text-white">${l.quantity}</td>
+            <td style="color: var(--table-sub-text);">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
-            <td class="small text-muted">${l.details || ''}</td>
+            <td class="small" style="color: var(--table-sub-text);">${l.details || ''}</td>
         </tr>
         `;
     }).join('');
@@ -1098,20 +1151,20 @@ function renderInventory(items) {
         <tr>
             <td class="text-muted fw-bold">#${p.id}</td>
             <td>
-                <span class="fw-bold d-block">${p.description}</span>
-                <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong class="text-card-label">${p.expiry_date || 'N/A'}</strong></span>
+                <span class="fw-bold d-block" style="color: var(--text-heading); font-size: 0.95rem;">${p.description}</span>
+                <span class="small" style="color: var(--table-sub-text);">HSN: <strong class="text-white">${p.hsn_code || 'N/A'}</strong> | Expiry: <strong style="color: #cbd5e1;">${p.expiry_date || 'N/A'}</strong></span>
             </td>
             <td>
                 <span class="badge badge-subtle-dark">${p.brand}</span>
-                <span class="text-muted small d-block">${p.country}</span>
+                <span class="small d-block mt-1" style="color: var(--table-sub-text);">${p.country}</span>
             </td>
             <td>
-                <span class="fw-semibold">₹${p.price}</span>
-                <span class="text-muted small d-block">MRP: ₹${p.mrp}</span>
+                <span class="fw-semibold text-white">₹${p.price}</span>
+                <span class="small d-block" style="color: var(--table-sub-text);">MRP: ₹${p.mrp}</span>
             </td>
             <td class="text-center">
                 <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
-                <span class="text-muted small d-block" style="font-size:0.75rem;">Opening: ${p.opening_stock}</span>
+                <span class="small d-block" style="color: var(--table-sub-text); font-size:0.75rem;">Opening: ${p.opening_stock}</span>
             </td>
             <td class="text-center"><span class="badge badge-subtle-danger">${p.damage}</span></td>
             <td><span class="${statusBadge} px-2 py-1">${p.status}</span></td>
@@ -1243,13 +1296,13 @@ function openDetailModal(prodId) {
     document.getElementById('detailModalTitle').innerText = p.description;
     document.getElementById('detailModalBody').innerHTML = `
         <div class="row g-2">
-            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong>${p.hsn_code || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong>${p.brand} (${p.country})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Price / MRP</small><strong>₹${p.price} (MRP: ₹${p.mrp})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Tax % / Price After Tax</small><strong>${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong>${p.per_petti || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong>${p.expiry_date || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong>${p.opening_stock}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong class="text-white">${p.hsn_code || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong class="text-white">${p.brand} (${p.country})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Price / MRP</small><strong class="text-white">₹${p.price} (MRP: ₹${p.mrp})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Tax % / Price After Tax</small><strong class="text-white">${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong class="text-white">${p.per_petti || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong class="text-white">${p.expiry_date || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong class="text-white">${p.opening_stock}</strong></div>
             <div class="col-6"><small class="text-muted d-block">Damaged Units</small><strong class="text-danger">${p.damage}</strong></div>
         </div>
     `;
@@ -1270,14 +1323,14 @@ async function loadLedger(productId = '') {
         const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Import</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
-            <td class="small text-muted">${l.timestamp}</td>
-            <td><strong>${l.product_desc}</strong></td>
+            <td class="small" style="color: var(--table-sub-text);">${l.timestamp}</td>
+            <td><strong style="color: var(--text-heading);">${l.product_desc}</strong></td>
             <td>${userBadge}</td>
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
-            <td class="fw-bold">${l.quantity}</td>
-            <td class="text-muted fw-semibold">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
+            <td class="fw-bold text-white">${l.quantity}</td>
+            <td style="color: var(--table-sub-text);">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
-            <td class="small text-muted">${l.details || ''}</td>
+            <td class="small" style="color: var(--table-sub-text);">${l.details || ''}</td>
         </tr>
         `;
     }).join('');
@@ -1340,34 +1393,34 @@ function renderMarketplaceTable(items) {
         
         return `
         <tr class="${isNeg ? 'negative-margin-row' : ''}">
-            <td>${idx + 1}</td>
+            <td class="text-muted fw-bold">${idx + 1}</td>
             <td>
-                <strong class="d-block">${item.sku}</strong>
-                <span class="text-muted small">ASIN: ${item.asin || 'N/A'}</span>
+                <strong class="d-block" style="color: #ffffff !important; font-size: 0.92rem;">${item.sku}</strong>
+                <span class="small" style="color: #94a3b8 !important;">ASIN: <strong style="color: #cbd5e1 !important;">${item.asin || 'N/A'}</strong></span>
             </td>
             <td>
-                <strong>${item.selling_price ? curr + item.selling_price.toFixed(2) : '-'}</strong>
-                ${inrSelling ? `<br><small class="text-muted">≈ ₹${inrSelling}</small>` : ''}
+                <strong class="text-white d-block">${item.selling_price ? curr + item.selling_price.toFixed(2) : '-'}</strong>
+                ${inrSelling ? `<small style="color: #94a3b8 !important;">≈ ₹${inrSelling}</small>` : ''}
             </td>
             <td>
-                <span>${item.fba_fee ? curr + item.fba_fee.toFixed(2) : '-'}</span>
-                ${inrFba ? `<br><small class="text-muted">≈ ₹${inrFba}</small>` : ''}
+                <span class="text-white">${item.fba_fee ? curr + item.fba_fee.toFixed(2) : '-'}</span>
+                ${inrFba ? `<br><small style="color: #94a3b8 !important;">≈ ₹${inrFba}</small>` : ''}
             </td>
             <td>
                 <span class="badge badge-subtle-dark">${item.conv_rate ? '1 ' + curr.trim() + ' = ₹' + item.conv_rate : '1.0'}</span>
             </td>
-            <td>${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</td>
+            <td><span class="text-white">${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</span></td>
             <td>
                 <span class="badge badge-subtle-dark">${item.min_selling_rate ? curr + item.min_selling_rate.toFixed(2) : '-'}</span>
-                ${inrMinSell ? `<br><small class="text-muted">≈ ₹${inrMinSell}</small>` : ''}
+                ${inrMinSell ? `<br><small style="color: #94a3b8 !important;">≈ ₹${inrMinSell}</small>` : ''}
             </td>
             <td>
-                <span class="${!isNeg ? 'text-success fw-bold' : 'text-danger fw-bold'}">
+                <span class="${!isNeg ? 'text-success fw-bold' : 'text-danger fw-bold'}" style="font-size: 1rem;">
                     ${item.margin !== null && item.margin !== undefined ? (item.margin >= 0 ? '+₹' : '-₹') + Math.abs(item.margin).toFixed(2) : '-'}
                 </span>
             </td>
             <td class="no-print">
-                ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
+                ${item.product_link ? `<a href="${item.product_link}" target="_blank" class="btn btn-sm btn-outline-primary fw-semibold"><i class="bi bi-box-arrow-up-right"></i> View</a>` : '<span class="text-muted small">No Link</span>'}
             </td>
         </tr>
         `;
