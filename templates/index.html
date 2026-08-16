@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
     <!-- Bootstrap 5, Icons & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -15,54 +15,104 @@
             --card-bg: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
+            --text-heading: #334155;
             --nav-bg: #0f172a;
             --border-color: #e2e8f0;
             --input-bg: #ffffff;
             --primary: #2563eb;
+            --primary-rgb: 37, 99, 235;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
+            --badge-bg: #f1f5f9;
+            --table-hover: #f8fafc;
         }
         [data-theme="dark"] {
-            --bg-body: #0b1120;
-            --card-bg: #1e293b;
+            --bg-body: #090d16;
+            --card-bg: #131b2e;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --nav-bg: #020617;
-            --border-color: #334155;
-            --input-bg: #0f172a;
+            --text-heading: #cbd5e1;
+            --nav-bg: #0b1120;
+            --border-color: #1e293b;
+            --input-bg: #0b1120;
             --primary: #3b82f6;
+            --primary-rgb: 59, 130, 246;
+            --badge-bg: #1e293b;
+            --table-hover: #17223b;
         }
-        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.2s, color 0.2s; }
-        .navbar-custom { background: var(--nav-bg); }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); }
         
-        /* Dark mode inputs and dropdowns high contrast */
-        .form-control, .form-select, .input-group-text { background-color: var(--input-bg) !important; color: var(--text-main) !important; border-color: var(--border-color) !important; }
-        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.8; }
+        body { 
+            background-color: var(--bg-body) !important; 
+            color: var(--text-main) !important; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            transition: background-color 0.2s ease, color 0.2s ease; 
+        }
         
-        .nav-pills .nav-link { color: var(--text-muted); font-weight: 600; border-radius: 10px; padding: 9px 16px; font-size: 0.9rem; }
-        .nav-pills .nav-link.active { background-color: var(--primary); color: #ffffff; }
+        .navbar-custom { background: var(--nav-bg) !important; border-bottom: 1px solid var(--border-color); }
+        .card { 
+            background-color: var(--card-bg) !important; 
+            border: 1px solid var(--border-color) !important; 
+            border-radius: 14px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        
+        /* High Contrast Text Utilities */
+        .text-card-label { color: var(--text-heading) !important; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; }
+        .text-card-sub { color: var(--text-muted) !important; font-size: 0.8rem; }
+        .text-muted { color: var(--text-muted) !important; }
+        
+        /* Inputs & Dropdowns */
+        .form-control, .form-select, .input-group-text { 
+            background-color: var(--input-bg) !important; 
+            color: var(--text-main) !important; 
+            border-color: var(--border-color) !important; 
+        }
+        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.7; }
+        .form-control:focus, .form-select:focus {
+            background-color: var(--input-bg) !important;
+            color: var(--text-main) !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.15) !important;
+        }
+        
+        /* Nav Pills */
+        .nav-pills .nav-link { color: var(--text-muted) !important; font-weight: 600; border-radius: 10px; padding: 9px 16px; font-size: 0.9rem; transition: all 0.2s; }
+        .nav-pills .nav-link:hover { color: var(--text-main) !important; background-color: var(--badge-bg); }
+        .nav-pills .nav-link.active { background-color: var(--primary) !important; color: #ffffff !important; font-weight: 700; }
+        
+        /* Stat Cards */
         .stat-card { border-radius: 14px; padding: 18px; position: relative; }
         
-        /* Filter Pills in Dark & Light */
+        /* Filter Buttons */
         .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
-        [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #94a3b8; border-color: #475569; }
-        [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: #334155; color: #fff; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #cbd5e1 !important; border-color: #334155 !important; }
+        [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: #1e293b !important; color: #fff !important; }
         
-        .stock-badge { font-size: 1.15rem; font-weight: 700; }
-        .table { color: var(--text-main) !important; }
-        .table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); background: var(--card-bg); border-bottom: 2px solid var(--border-color); }
-        .table td { border-bottom: 1px solid var(--border-color); }
-        .modal-content { background-color: var(--card-bg); color: var(--text-main); border-radius: 16px; border: 1px solid var(--border-color); }
+        /* Tables in Dark Mode */
+        .table { color: var(--text-main) !important; --bs-table-bg: transparent !important; }
+        .table th { 
+            font-size: 0.78rem; 
+            text-transform: uppercase; 
+            letter-spacing: 0.6px; 
+            color: var(--text-muted) !important; 
+            background: var(--card-bg) !important; 
+            border-bottom: 2px solid var(--border-color) !important; 
+        }
+        .table td { border-bottom: 1px solid var(--border-color) !important; }
+        .table-hover tbody tr:hover { background-color: var(--table-hover) !important; }
+        
+        /* Dark Theme Badges & Negative Rows */
+        .badge-subtle-primary { background-color: rgba(59, 130, 246, 0.15); color: #60a5fa !important; }
+        .badge-subtle-success { background-color: rgba(16, 185, 129, 0.15); color: #34d399 !important; }
+        .badge-subtle-danger { background-color: rgba(239, 68, 68, 0.15); color: #f87171 !important; }
+        .badge-subtle-warning { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24 !important; }
+        .badge-subtle-dark { background-color: var(--badge-bg); color: var(--text-heading) !important; border: 1px solid var(--border-color); }
+        
+        .negative-margin-row { background-color: rgba(239, 68, 68, 0.12) !important; }
+        
+        .modal-content { background-color: var(--card-bg) !important; color: var(--text-main) !important; border-radius: 16px; border: 1px solid var(--border-color) !important; }
         .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1080; }
-        .negative-margin-row { background-color: rgba(239, 68, 68, 0.08) !important; }
-        
-        /* High contrast buttons in dark mode */
-        [data-theme="dark"] .btn-outline-secondary { color: #cbd5e1; border-color: #475569; }
-        [data-theme="dark"] .btn-outline-secondary:hover { background-color: #334155; color: #fff; }
-        [data-theme="dark"] .btn-outline-success { color: #34d399; border-color: #059669; }
-        [data-theme="dark"] .btn-outline-success:hover { background-color: #059669; color: #fff; }
         
         @media print {
             .no-print { display: none !important; }
@@ -122,14 +172,14 @@
     <nav class="navbar navbar-dark navbar-custom px-4 py-2 sticky-top shadow-sm no-print">
         <div class="d-flex align-items-center">
             <i class="bi bi-boxes text-primary fs-4 me-2"></i>
-            <span class="navbar-brand fw-bold fs-5 mb-0">Warehouse Hub Pro</span>
+            <span class="navbar-brand fw-bold fs-5 mb-0 text-white">Warehouse Hub Pro</span>
         </div>
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-sm btn-outline-secondary" onclick="toggleTheme()" id="themeBtn" title="Toggle Light/Dark Theme">
-                <i class="bi bi-moon-stars-fill"></i>
+                <i class="bi bi-moon-stars-fill text-warning"></i>
             </button>
             <div class="text-white text-end d-none d-md-block">
-                <div class="small fw-bold" id="navUserLabel">User</div>
+                <div class="small fw-bold text-white" id="navUserLabel">User</div>
                 <div class="text-white-50" style="font-size: 0.75rem;" id="navRoleLabel">Role</div>
             </div>
             <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
@@ -165,31 +215,31 @@
             <div class="tab-pane fade show active master-only" id="dashboardTab">
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary);">
-                            <span class="text-muted small fw-bold">TOTAL INVENTORY ASSET</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--primary) !important;">
+                            <span class="text-card-label">TOTAL INVENTORY ASSET</span>
                             <h3 class="fw-bold my-1 text-primary" id="statAssetVal">₹0.00</h3>
-                            <span class="text-muted small"><span id="statTotalItems">0</span> SKUs (<span id="statTotalQty">0</span> Units)</span>
+                            <span class="text-card-sub"><span id="statTotalItems">0</span> SKUs (<span id="statTotalQty">0</span> Units)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger);">
-                            <span class="text-muted small fw-bold">DAMAGE LOSS VALUE</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--danger) !important;">
+                            <span class="text-card-label">DAMAGE LOSS VALUE</span>
                             <h3 class="fw-bold my-1 text-danger" id="statDamageVal">₹0.00</h3>
-                            <span class="text-danger small">Defective stock evaluation</span>
+                            <span class="text-card-sub">Defective stock evaluation</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning);">
-                            <span class="text-muted small fw-bold">LOW STOCK WARNINGS</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid var(--warning) !important;">
+                            <span class="text-card-label">LOW STOCK WARNINGS</span>
                             <h3 class="fw-bold my-1 text-warning" id="statLowStock">0</h3>
-                            <span class="text-warning small">Stock &le; 10 units (Replenish)</span>
+                            <span class="text-card-sub">Stock &le; 10 units (Replenish)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card p-3 stat-card" style="border-left: 4px solid #8b5cf6;">
-                            <span class="text-muted small fw-bold">GLOBAL MARKETPLACE SKUs</span>
-                            <h3 class="fw-bold my-1 text-dark" id="statGlobalSkus">0</h3>
-                            <span class="text-muted small">5 International Marketplaces</span>
+                        <div class="card p-3 stat-card" style="border-left: 4px solid #8b5cf6 !important;">
+                            <span class="text-card-label">GLOBAL MARKETPLACE SKUs</span>
+                            <h3 class="fw-bold my-1 text-info" id="statGlobalSkus">0</h3>
+                            <span class="text-card-sub">5 International Marketplaces</span>
                         </div>
                     </div>
                 </div>
@@ -224,20 +274,20 @@
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div>
                             <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Shift Inventory Operations (IST)</h6>
-                            <span class="text-muted small">Live movements recorded today on warehouse floor</span>
+                            <span class="text-card-sub">Live movements recorded today on warehouse floor</span>
                         </div>
                         <div class="d-flex gap-3">
-                            <div class="px-3 py-1 bg-success-subtle text-success rounded-3 text-center">
+                            <div class="px-3 py-1 badge-subtle-success rounded-3 text-center border">
                                 <span class="small fw-bold">TODAY RECEIVED</span>
-                                <h5 class="fw-bold mb-0" id="workerTodayReceived">0</h5>
+                                <h5 class="fw-bold mb-0 text-success" id="workerTodayReceived">0</h5>
                             </div>
-                            <div class="px-3 py-1 bg-danger-subtle text-danger rounded-3 text-center">
+                            <div class="px-3 py-1 badge-subtle-danger rounded-3 text-center border">
                                 <span class="small fw-bold">TODAY ISSUED</span>
-                                <h5 class="fw-bold mb-0" id="workerTodayIssued">0</h5>
+                                <h5 class="fw-bold mb-0 text-danger" id="workerTodayIssued">0</h5>
                             </div>
-                            <div class="px-3 py-1 bg-primary-subtle text-primary rounded-3 text-center">
+                            <div class="px-3 py-1 badge-subtle-primary rounded-3 text-center border">
                                 <span class="small fw-bold">TOTAL OPS</span>
-                                <h5 class="fw-bold mb-0" id="workerTodayOps">0</h5>
+                                <h5 class="fw-bold mb-0 text-primary" id="workerTodayOps">0</h5>
                             </div>
                         </div>
                     </div>
@@ -655,7 +705,7 @@ let mpChartInstance = null;
 let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj, toastObj;
 
 (function initTheme() {
-    const saved = localStorage.getItem('erp-theme') || 'light';
+    const saved = localStorage.getItem('erp-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 })();
@@ -892,7 +942,7 @@ async function loadDashboard() {
             datasets: [{
                 label: 'Physical Units',
                 data: stats.top_stocks.map(s => s.actual_stock),
-                backgroundColor: '#2563eb',
+                backgroundColor: '#3b82f6',
                 borderRadius: 6
             }]
         },
@@ -900,8 +950,8 @@ async function loadDashboard() {
             responsive: true, 
             maintainAspectRatio: false,
             scales: {
-                x: { ticks: { color: textColor } },
-                y: { ticks: { color: textColor } }
+                x: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } },
+                y: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } }
             },
             plugins: {
                 legend: { labels: { color: textColor } }
@@ -913,10 +963,10 @@ async function loadDashboard() {
     const logs = await logRes.json();
     document.getElementById('quickFeedBody').innerHTML = logs.slice(0, 6).map(l => {
         const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
-        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Import</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Import</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
-            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
+            <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
             <td><strong class="small">${l.product_desc}</strong></td>
             <td class="text-end small">${userBadge}</td>
         </tr>
@@ -930,7 +980,6 @@ async function loadAnalytics() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDark ? '#94a3b8' : '#64748b';
     
-    // Brand Distribution Donut Chart
     const ctxBrand = document.getElementById('brandChart').getContext('2d');
     if(brandChartInstance) brandChartInstance.destroy();
     brandChartInstance = new Chart(ctxBrand, {
@@ -939,7 +988,7 @@ async function loadAnalytics() {
             labels: stats.brand_breakdown.map(b => b.brand),
             datasets: [{
                 data: stats.brand_breakdown.map(b => b.qty),
-                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
             }]
         },
         options: { 
@@ -949,7 +998,6 @@ async function loadAnalytics() {
         }
     });
 
-    // Marketplace Comparison Chart
     const ctxMp = document.getElementById('marketplaceChart').getContext('2d');
     if(mpChartInstance) mpChartInstance.destroy();
     mpChartInstance = new Chart(ctxMp, {
@@ -967,8 +1015,8 @@ async function loadAnalytics() {
             responsive: true, 
             maintainAspectRatio: false,
             scales: {
-                x: { ticks: { color: textColor } },
-                y: { ticks: { color: textColor } }
+                x: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } },
+                y: { ticks: { color: textColor }, grid: { color: isDark ? '#1e293b' : '#f1f5f9' } }
             },
             plugins: { legend: { labels: { color: textColor } } }
         }
@@ -992,11 +1040,11 @@ async function loadActivityLogs() {
     }
     tbody.innerHTML = logs.map(l => {
         const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
-        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Migration</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Migration</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
             <td class="small text-muted">${l.timestamp}</td>
-            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
+            <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
             <td><strong>${l.product_desc}</strong></td>
             <td>${userBadge}</td>
             <td class="fw-bold">${l.quantity}</td>
@@ -1018,7 +1066,6 @@ async function loadProducts() {
     document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
     document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
-    // Populate Brand Dropdown with Product Counts
     const brandSelect = document.getElementById('invBrandFilter');
     const brandMap = {};
     allProducts.forEach(p => {
@@ -1046,16 +1093,16 @@ function renderInventory(items) {
 
     tbody.innerHTML = items.map(p => {
         const stockClass = p.actual_stock > 10 ? 'text-success' : (p.actual_stock > 0 ? 'text-warning' : 'text-danger');
-        const statusBadge = p.status === 'Completed' ? 'badge bg-success-subtle text-success' : 'badge bg-warning-subtle text-warning';
+        const statusBadge = p.status === 'Completed' ? 'badge badge-subtle-success' : 'badge badge-subtle-warning';
         return `
         <tr>
             <td class="text-muted fw-bold">#${p.id}</td>
             <td>
                 <span class="fw-bold d-block">${p.description}</span>
-                <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong class="text-secondary">${p.expiry_date || 'N/A'}</strong></span>
+                <span class="text-muted small">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong class="text-card-label">${p.expiry_date || 'N/A'}</strong></span>
             </td>
             <td>
-                <span class="badge bg-light text-dark border">${p.brand}</span>
+                <span class="badge badge-subtle-dark">${p.brand}</span>
                 <span class="text-muted small d-block">${p.country}</span>
             </td>
             <td>
@@ -1066,7 +1113,7 @@ function renderInventory(items) {
                 <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
                 <span class="text-muted small d-block" style="font-size:0.75rem;">Opening: ${p.opening_stock}</span>
             </td>
-            <td class="text-center"><span class="badge bg-danger-subtle text-danger">${p.damage}</span></td>
+            <td class="text-center"><span class="badge badge-subtle-danger">${p.damage}</span></td>
             <td><span class="${statusBadge} px-2 py-1">${p.status}</span></td>
             <td class="text-center no-print">
                 <div class="btn-group" role="group">
@@ -1220,13 +1267,13 @@ async function loadLedger(productId = '') {
     }
     tbody.innerHTML = logs.map(l => {
         const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
-        const userBadge = isSystem ? '<span class="badge bg-light text-dark border">Excel Migration</span>' : `<span class="badge bg-primary-subtle text-primary">${l.username}</span>`;
+        const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Import</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
             <td class="small text-muted">${l.timestamp}</td>
             <td><strong>${l.product_desc}</strong></td>
             <td>${userBadge}</td>
-            <td><span class="badge ${l.action==='RECEIVE'?'bg-success':(l.action==='ISSUE'?'bg-danger':(l.action==='UNDO'?'bg-dark':'bg-warning'))}">${l.action}</span></td>
+            <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
             <td class="fw-bold">${l.quantity}</td>
             <td class="text-muted fw-semibold">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
@@ -1295,7 +1342,7 @@ function renderMarketplaceTable(items) {
         <tr class="${isNeg ? 'negative-margin-row' : ''}">
             <td>${idx + 1}</td>
             <td>
-                <strong>${item.sku}</strong><br>
+                <strong class="d-block">${item.sku}</strong>
                 <span class="text-muted small">ASIN: ${item.asin || 'N/A'}</span>
             </td>
             <td>
@@ -1307,11 +1354,11 @@ function renderMarketplaceTable(items) {
                 ${inrFba ? `<br><small class="text-muted">≈ ₹${inrFba}</small>` : ''}
             </td>
             <td>
-                <span class="badge bg-light text-dark border">${item.conv_rate ? '1 ' + curr.trim() + ' = ₹' + item.conv_rate : '1.0'}</span>
+                <span class="badge badge-subtle-dark">${item.conv_rate ? '1 ' + curr.trim() + ' = ₹' + item.conv_rate : '1.0'}</span>
             </td>
             <td>${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</td>
             <td>
-                <span class="badge bg-light text-dark border">${item.min_selling_rate ? curr + item.min_selling_rate.toFixed(2) : '-'}</span>
+                <span class="badge badge-subtle-dark">${item.min_selling_rate ? curr + item.min_selling_rate.toFixed(2) : '-'}</span>
                 ${inrMinSell ? `<br><small class="text-muted">≈ ₹${inrMinSell}</small>` : ''}
             </td>
             <td>
