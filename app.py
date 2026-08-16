@@ -62,12 +62,13 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             marketplace TEXT NOT NULL,
             marketplace_label TEXT NOT NULL,
+            currency_symbol TEXT DEFAULT '$',
             sku TEXT,
             asin TEXT,
             selling_price REAL DEFAULT 0,
             fba_fee REAL DEFAULT 0,
             purchase_price REAL DEFAULT 0,
-            conv_rate REAL DEFAULT 0,
+            conv_rate REAL DEFAULT 1,
             purchase_rate REAL DEFAULT 0,
             freight REAL DEFAULT 0,
             min_selling_rate REAL DEFAULT 0,
@@ -108,7 +109,7 @@ def migrate_from_excel():
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     
-    # 1. Migrate Warehouse Products
+    # 1. Migrate Warehouse Products (Sheet1)
     cursor.execute("SELECT COUNT(*) FROM products")
     if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
         sheet = wb['Sheet1']
@@ -125,8 +126,10 @@ def migrate_from_excel():
             except: price = 0.0
             try: tax = float(sheet.cell(row=row, column=7).value or 0)
             except: tax = 0.0
-            try: price_after_tax = float(sheet.cell(row=row, column=8).value or 0)
-            except: price_after_tax = 0.0
+            try: 
+                price_after_tax = float(sheet.cell(row=row, column=8).value or (price * (1 + tax)))
+            except: 
+                price_after_tax = price
             try: mrp = float(sheet.cell(row=row, column=9).value or 0)
             except: mrp = 0.0
             try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
@@ -163,68 +166,82 @@ def migrate_from_excel():
                     except:
                         pass
 
-    # 2. Migrate All Global Country Marketplace Sheets
+    # 2. Migrate Global Country Marketplace Sheets with Dynamic Column Header Detection
     cursor.execute("SELECT COUNT(*) FROM marketplace_products")
     if cursor.fetchone()[0] == 0:
         marketplaces = [
-            ('GTUS', 'USA 🇺🇸 (GTUS)'),
-            ('CANADA', 'Canada 🇨🇦'),
-            ('GTAU', 'Australia 🇦🇺 (GTAU)'),
-            ('UAE', 'UAE 🇦🇪'),
-            ('INDIA', 'India 🇮🇳'),
-            ('VAIS NEW', 'USA 🇺🇸 (VAIS)'),
-            ('RTAU', 'Australia 🇦🇺 (RTAU)')
+            ('GTUS', 'USA 🇺🇸 (GTUS)', '$', 95.0),
+            ('CANADA', 'Canada 🇨🇦', 'CA$', 66.0),
+            ('GTAU', 'Australia 🇦🇺 (GTAU)', 'A$', 65.0),
+            ('UAE', 'UAE 🇦🇪', 'AED ', 25.0),
+            ('INDIA', 'India 🇮🇳', '₹', 1.0),
+            ('VAIS NEW', 'USA 🇺🇸 (VAIS)', '$', 94.0),
+            ('RTAU', 'Australia 🇦🇺 (RTAU)', 'A$', 65.0)
         ]
         
-        for m_sheet, m_label in marketplaces:
+        for m_sheet, m_label, m_curr, default_conv in marketplaces:
             if m_sheet not in wb.sheetnames:
                 continue
             ws = wb[m_sheet]
+            
+            # Detect header row dynamically
             header_row = None
+            header_map = {}
             for r in range(1, 10):
-                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 10)]
+                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 15)]
                 if any('SKU' in v for v in row_vals):
                     header_row = r
+                    for c_idx, val in enumerate(row_vals):
+                        if val:
+                            header_map[val] = c_idx + 1
                     break
             
             if not header_row:
                 continue
-                
+            
+            # Helper to fetch by dynamic header name
+            def get_val_by_keys(row_idx, keys, default=0.0):
+                for k in keys:
+                    for h_name, col_num in header_map.items():
+                        if k in h_name:
+                            v = ws.cell(row=row_idx, column=col_num).value
+                            if v is not None:
+                                try: return float(v)
+                                except: return default
+                return default
+
             for r in range(header_row + 1, ws.max_row + 1):
-                sku = ws.cell(row=r, column=2).value
+                sku_col = header_map.get('SKU', header_map.get('SELLER-SKU', 2))
+                sku = ws.cell(row=r, column=sku_col).value
                 if not sku or str(sku).strip().lower() in ['none', '', 'sku', 'seller-sku']:
                     continue
                 
-                asin = str(ws.cell(row=r, column=3).value or '')
-                try: price = float(ws.cell(row=r, column=4).value or 0)
-                except: price = 0.0
-                try: fba = float(ws.cell(row=r, column=5).value or 0)
-                except: fba = 0.0
-                try: purchase_price = float(ws.cell(row=r, column=6).value or 0)
-                except: purchase_price = 0.0
-                try: conv_rate = float(ws.cell(row=r, column=7).value or 0)
-                except: conv_rate = 0.0
-                try: purchase_rate = float(ws.cell(row=r, column=8).value or 0)
-                except: purchase_rate = 0.0
-                try: freight = float(ws.cell(row=r, column=9).value or 0)
-                except: freight = 0.0
-                try: min_selling = float(ws.cell(row=r, column=10).value or 0)
-                except: min_selling = 0.0
-                try: margin = float(ws.cell(row=r, column=11).value or 0)
-                except: margin = 0.0
+                asin_col = header_map.get('ASIN', 3)
+                asin = str(ws.cell(row=r, column=asin_col).value or '').strip()
                 
+                price = get_val_by_keys(r, ['PRICE'])
+                fba = get_val_by_keys(r, ['FBA FEE', 'FBA'])
+                purchase_price = get_val_by_keys(r, ['PURCHASE PRICE', 'PURCHASE RATE'])
+                conv_rate = get_val_by_keys(r, ['CONV RATE', 'CONVERSION RATE'], default=default_conv)
+                if conv_rate <= 0: conv_rate = default_conv
+                
+                freight = get_val_by_keys(r, ['FREIGHT', 'FRIEGHT'])
+                min_selling = get_val_by_keys(r, ['MIN SELLING RATE', 'MIN SELLING'])
+                margin = get_val_by_keys(r, ['MARGIN'])
+                
+                # Link column discovery
                 link = ""
-                for l_col in [12, 13, 14]:
-                    l_val = str(ws.cell(row=r, column=l_col).value or '').strip()
-                    if l_val.startswith('http'):
-                        link = l_val
+                for c in range(1, 16):
+                    cell_v = str(ws.cell(row=r, column=c).value or '').strip()
+                    if cell_v.startswith('http'):
+                        link = cell_v
                         break
                 
                 cursor.execute('''
                     INSERT INTO marketplace_products 
-                    (marketplace, marketplace_label, sku, asin, selling_price, fba_fee, purchase_price, conv_rate, purchase_rate, freight, min_selling_rate, margin, product_link)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (m_sheet, m_label, str(sku).strip(), asin, price, fba, purchase_price, conv_rate, purchase_rate, freight, min_selling, margin, link))
+                    (marketplace, marketplace_label, currency_symbol, sku, asin, selling_price, fba_fee, purchase_price, conv_rate, purchase_rate, freight, min_selling_rate, margin, product_link)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (m_sheet, m_label, m_curr, str(sku).strip(), asin, price, fba, purchase_price, conv_rate, purchase_price, freight, min_selling, margin, link))
 
     conn.commit()
     conn.close()
@@ -264,7 +281,7 @@ def reset_password():
     pin = data.get('pin', '').strip()
     
     if pin != MASTER_RESET_PIN:
-        return jsonify({"status": "error", "message": "Invalid Master PIN"}), 403
+        return jsonify({"status": "error", "message": "Invalid Master Recovery PIN"}), 403
     
     if not username or not new_password:
         return jsonify({"status": "error", "message": "All fields are required"}), 400
@@ -309,7 +326,24 @@ def get_stats():
     low_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock <= 10").fetchone()[0]
     pending_tasks = conn.execute("SELECT COUNT(*) FROM products WHERE status = 'Pending'").fetchone()[0]
     total_global_skus = conn.execute("SELECT COUNT(*) FROM marketplace_products").fetchone()[0]
+    
+    # Financial Valuations without NaN
+    all_prods = conn.execute("SELECT actual_stock, damage, price_after_tax, price FROM products").fetchall()
+    total_inventory_val = 0.0
+    total_damage_loss = 0.0
+    for p in all_prods:
+        unit_p = float(p['price_after_tax'] or p['price'] or 0)
+        total_inventory_val += float(p['actual_stock'] or 0) * unit_p
+        total_damage_loss += float(p['damage'] or 0) * unit_p
+    
     top_stocks = conn.execute("SELECT description, actual_stock FROM products ORDER BY actual_stock DESC LIMIT 6").fetchall()
+    
+    # Brand Breakdown for Analytics
+    brand_breakdown = conn.execute("SELECT brand, COUNT(*), SUM(actual_stock) FROM products GROUP BY brand ORDER BY SUM(actual_stock) DESC LIMIT 5").fetchall()
+    
+    # Country Marketplace Breakdown
+    marketplace_breakdown = conn.execute("SELECT marketplace_label, COUNT(*), AVG(margin) FROM marketplace_products GROUP BY marketplace_label").fetchall()
+    
     conn.close()
     return jsonify({
         "total_items": total_items,
@@ -317,7 +351,11 @@ def get_stats():
         "low_stock": low_stock,
         "pending_tasks": pending_tasks,
         "total_global_skus": total_global_skus,
-        "top_stocks": [dict(r) for r in top_stocks]
+        "total_inventory_val": round(total_inventory_val, 2),
+        "total_damage_loss": round(total_damage_loss, 2),
+        "top_stocks": [dict(r) for r in top_stocks],
+        "brand_breakdown": [{"brand": r[0], "count": r[1], "qty": r[2] or 0} for r in brand_breakdown],
+        "marketplace_breakdown": [{"label": r[0], "skus": r[1], "avg_margin": round(r[2] or 0, 2)} for r in marketplace_breakdown]
     })
 
 @app.route('/api/products', methods=['GET'])
@@ -327,7 +365,6 @@ def get_products():
     conn.close()
     return jsonify([dict(p) for p in products])
 
-# Add Product - Available to BOTH Master and Worker
 @app.route('/api/products/add', methods=['POST'])
 def add_product():
     if 'username' not in session:
@@ -348,7 +385,6 @@ def add_product():
     per_petti = int(data.get('per_petti', 0) or 0)
     expiry = data.get('expiry_date', '').strip()
     opening = int(data.get('opening_stock', 0) or 0)
-    
     status = "Pending" if opening <= 5 else "Completed"
     
     conn = get_db()
@@ -368,11 +404,10 @@ def add_product():
     conn.close()
     return jsonify({"status": "success", "message": "Product added successfully!"})
 
-# Delete Product - Exclusive to MASTER
 @app.route('/api/products/delete/<int:prod_id>', methods=['DELETE'])
 def delete_product(prod_id):
     if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Only Master can delete products from catalog"}), 403
+        return jsonify({"status": "error", "message": "Forbidden: Master authority required"}), 403
     
     conn = get_db()
     cursor = conn.cursor()
@@ -391,11 +426,10 @@ def delete_product(prod_id):
     conn.close()
     return jsonify({"status": "success", "message": f"Product #{prod_id} successfully deleted"})
 
-# Edit Product - Exclusive to MASTER
 @app.route('/api/products/edit', methods=['POST'])
 def edit_product():
     if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Only Master can edit product details"}), 403
+        return jsonify({"status": "error", "message": "Forbidden: Master authority required"}), 403
         
     data = request.json or {}
     prod_id = data.get('id')
@@ -451,7 +485,7 @@ def adjust_stock():
     if mode == 'DAMAGE':
         if change > prev_stock:
             conn.close()
-            return jsonify({"status": "error", "message": f"Cannot mark {change} as damaged. Only {prev_stock} available in stock!"}), 400
+            return jsonify({"status": "error", "message": f"Cannot mark {change} units as damaged. Only {prev_stock} available!"}), 400
         new_stock = prev_stock - change
         new_damage = prev_damage + change
         status = "Pending" if new_stock <= 5 else "Completed"
@@ -461,6 +495,7 @@ def adjust_stock():
             INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
             VALUES (?, ?, ?, 'DAMAGE', ?, ?, ?, ?, ?)
         ''', (prod_id, prod['description'], session['username'], change, prev_stock, new_stock, detail_str, get_current_ist_time()))
+        log_id = cursor.lastrowid
     else:
         action_type = "RECEIVE" if change > 0 else "ISSUE"
         if change < 0 and abs(change) > prev_stock:
@@ -475,13 +510,44 @@ def adjust_stock():
             INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (prod_id, prod['description'], session['username'], action_type, abs(change), prev_stock, new_stock, detail_str, get_current_ist_time()))
+        log_id = cursor.lastrowid
     
     conn.commit()
     conn.close()
-    return jsonify({"status": "success", "new_stock": new_stock, "product_status": status})
+    return jsonify({"status": "success", "new_stock": new_stock, "log_id": log_id, "prev_stock": prev_stock, "prod_id": prod_id})
+
+@app.route('/api/products/undo', methods=['POST'])
+def undo_adjustment():
+    if 'username' not in session:
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    data = request.json or {}
+    log_id = data.get('log_id')
+    conn = get_db()
+    cursor = conn.cursor()
+    log = cursor.execute("SELECT * FROM activity_log WHERE id = ?", (log_id,)).fetchone()
+    if not log:
+        conn.close()
+        return jsonify({"status": "error", "message": "Transaction log not found"}), 404
+        
+    prod_id = log['product_id']
+    prev_stock = log['prev_stock']
+    status = "Pending" if prev_stock <= 5 else "Completed"
+    
+    cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (prev_stock, status, prod_id))
+    cursor.execute('''
+        INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
+        VALUES (?, ?, ?, 'UNDO', ?, ?, ?, 'Undo Action Applied', ?)
+    ''', (prod_id, log['product_desc'], session['username'], log['quantity'], log['new_stock'], prev_stock, get_current_ist_time()))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": "Action successfully reverted!"})
 
 @app.route('/api/marketplaces/products', methods=['GET'])
 def get_marketplace_products():
+    if session.get('role') != 'master':
+        return jsonify({"status": "error", "message": "Confidential financial data reserved for Master role"}), 403
     mp = request.args.get('marketplace', 'GTUS')
     conn = get_db()
     items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
@@ -491,11 +557,24 @@ def get_marketplace_products():
 @app.route('/api/ledger', methods=['GET'])
 def get_ledger():
     prod_id = request.args.get('product_id')
+    action_type = request.args.get('action')
     conn = get_db()
+    query = "SELECT * FROM activity_log"
+    params = []
+    conditions = []
+    
     if prod_id:
-        logs = conn.execute("SELECT * FROM activity_log WHERE product_id = ? ORDER BY id DESC", (prod_id,)).fetchall()
-    else:
-        logs = conn.execute("SELECT * FROM activity_log ORDER BY id DESC LIMIT 150").fetchall()
+        conditions.append("product_id = ?")
+        params.append(prod_id)
+    if action_type and action_type != 'ALL':
+        conditions.append("action = ?")
+        params.append(action_type)
+        
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+        
+    query += " ORDER BY id DESC LIMIT 150"
+    logs = conn.execute(query, params).fetchall()
     conn.close()
     return jsonify([dict(l) for l in logs])
 
@@ -517,16 +596,18 @@ def export_warehouse_csv():
 
 @app.route('/api/export/marketplace-csv')
 def export_marketplace_csv():
+    if session.get('role') != 'master':
+        return jsonify({"status": "error", "message": "Forbidden"}), 403
     mp = request.args.get('marketplace', 'GTUS')
     conn = get_db()
     items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
     conn.close()
     
     def generate():
-        yield "ID,Marketplace,SKU,ASIN,Selling Price,FBA Fee,Purchase Price,Conversion Rate,Purchase Rate,Freight,Min Selling Price,Profit Margin %,Product Link\n"
+        yield "ID,Marketplace,Currency,SKU,ASIN,Selling Price,FBA Fee,Purchase Price,Conversion Rate,Purchase Rate,Freight,Min Selling Price,Profit Margin,Product Link\n"
         for item in items:
             sku = item["sku"].replace('"', '""')
-            yield f'"{item["id"]}","{item["marketplace_label"]}","{sku}","{item["asin"]}","{item["selling_price"]}","{item["fba_fee"]}","{item["purchase_price"]}","{item["conv_rate"]}","{item["purchase_rate"]}","{item["freight"]}","{item["min_selling_rate"]}","{item["margin"]}","{item["product_link"]}"\n'
+            yield f'"{item["id"]}","{item["marketplace_label"]}","{item["currency_symbol"]}","{sku}","{item["asin"]}","{item["selling_price"]}","{item["fba_fee"]}","{item["purchase_price"]}","{item["conv_rate"]}","{item["purchase_rate"]}","{item["freight"]}","{item["min_selling_rate"]}","{item["margin"]}","{item["product_link"]}"\n'
             
     return Response(generate(), mimetype="text/csv", headers={"Content-Disposition": f"attachment; filename=Marketplace_{mp}_Pricing_Report.csv"})
 
