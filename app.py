@@ -109,7 +109,7 @@ def migrate_from_excel():
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     
-    # 1. Migrate Warehouse Products (Sheet1)
+    # 1. Migrate Warehouse Products with True Running Balance Math
     cursor.execute("SELECT COUNT(*) FROM products")
     if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
         sheet = wb['Sheet1']
@@ -151,44 +151,50 @@ def migrate_from_excel():
             ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
             prod_id = cursor.lastrowid
             
+            # Step-by-Step Running Balance Ledger for Historical Entries
+            running_balance = opening
             for col in range(18, min(sheet.max_column + 1, 50)):
                 val = sheet.cell(row=row, column=col).value
                 col_hdr = sheet.cell(row=2, column=col).value
                 if val is not None and str(val).strip() not in ['', 'None', 'nan']:
                     try:
                         qty = int(float(val))
+                        if qty == 0: continue
+                        
                         action = "RECEIVE" if qty > 0 else "ISSUE"
-                        date_str = str(col_hdr)[:10] if col_hdr else "Excel Import"
+                        prev_bal = running_balance
+                        running_balance = max(0, running_balance + qty)
+                        date_str = str(col_hdr)[:10] if col_hdr else "Excel Log"
+                        
                         cursor.execute('''
                             INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (prod_id, str(desc).strip(), 'System Excel', action, abs(qty), opening, actual, f"Initial Data from {date_str}", get_current_ist_time()))
+                        ''', (prod_id, str(desc).strip(), 'System Excel', action, abs(qty), prev_bal, running_balance, f"Initial Data from {date_str}", get_current_ist_time()))
                     except:
                         pass
 
-    # 2. Migrate Global Country Marketplace Sheets with Dynamic Column Header Detection
+    # 2. Migrate Global Country Marketplace Sheets with Guaranteed Amazon Fallback URLs
     cursor.execute("SELECT COUNT(*) FROM marketplace_products")
     if cursor.fetchone()[0] == 0:
         marketplaces = [
-            ('GTUS', 'USA 🇺🇸 (GTUS)', '$', 95.0),
-            ('CANADA', 'Canada 🇨🇦', 'CA$', 66.0),
-            ('GTAU', 'Australia 🇦🇺 (GTAU)', 'A$', 65.0),
-            ('UAE', 'UAE 🇦🇪', 'AED ', 25.0),
-            ('INDIA', 'India 🇮🇳', '₹', 1.0),
-            ('VAIS NEW', 'USA 🇺🇸 (VAIS)', '$', 94.0),
-            ('RTAU', 'Australia 🇦🇺 (RTAU)', 'A$', 65.0)
+            ('GTUS', 'USA 🇺🇸 (GTUS)', '$', 95.0, 'https://www.amazon.com/dp/'),
+            ('CANADA', 'Canada 🇨🇦', 'CA$', 66.0, 'https://www.amazon.ca/dp/'),
+            ('GTAU', 'Australia 🇦🇺 (GTAU)', 'A$', 65.0, 'https://www.amazon.com.au/dp/'),
+            ('UAE', 'UAE 🇦🇪', 'AED ', 25.0, 'https://www.amazon.ae/dp/'),
+            ('INDIA', 'India 🇮🇳', '₹', 1.0, 'https://www.amazon.in/dp/'),
+            ('VAIS NEW', 'USA 🇺🇸 (VAIS)', '$', 94.0, 'https://www.amazon.com/dp/'),
+            ('RTAU', 'Australia 🇦🇺 (RTAU)', 'A$', 65.0, 'https://www.amazon.com.au/dp/')
         ]
         
-        for m_sheet, m_label, m_curr, default_conv in marketplaces:
+        for m_sheet, m_label, m_curr, default_conv, amazon_base in marketplaces:
             if m_sheet not in wb.sheetnames:
                 continue
             ws = wb[m_sheet]
             
-            # Detect header row dynamically
             header_row = None
             header_map = {}
             for r in range(1, 10):
-                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 15)]
+                row_vals = [str(ws.cell(row=r, column=c).value or '').strip().upper() for c in range(1, 16)]
                 if any('SKU' in v for v in row_vals):
                     header_row = r
                     for c_idx, val in enumerate(row_vals):
@@ -199,7 +205,6 @@ def migrate_from_excel():
             if not header_row:
                 continue
             
-            # Helper to fetch by dynamic header name
             def get_val_by_keys(row_idx, keys, default=0.0):
                 for k in keys:
                     for h_name, col_num in header_map.items():
@@ -217,7 +222,7 @@ def migrate_from_excel():
                     continue
                 
                 asin_col = header_map.get('ASIN', 3)
-                asin = str(ws.cell(row=r, column=asin_col).value or '').strip()
+                asin = str(ws.cell(row=r, column=asin_col).value or '').strip().replace('\n', '')
                 
                 price = get_val_by_keys(r, ['PRICE'])
                 fba = get_val_by_keys(r, ['FBA FEE', 'FBA'])
@@ -229,13 +234,16 @@ def migrate_from_excel():
                 min_selling = get_val_by_keys(r, ['MIN SELLING RATE', 'MIN SELLING'])
                 margin = get_val_by_keys(r, ['MARGIN'])
                 
-                # Link column discovery
+                # Check for explicit link in sheet or create guaranteed Amazon URL via ASIN
                 link = ""
                 for c in range(1, 16):
                     cell_v = str(ws.cell(row=r, column=c).value or '').strip()
                     if cell_v.startswith('http'):
                         link = cell_v
                         break
+                
+                if not link and asin and len(asin) >= 5:
+                    link = f"{amazon_base}{asin}"
                 
                 cursor.execute('''
                     INSERT INTO marketplace_products 
@@ -327,7 +335,6 @@ def get_stats():
     pending_tasks = conn.execute("SELECT COUNT(*) FROM products WHERE status = 'Pending'").fetchone()[0]
     total_global_skus = conn.execute("SELECT COUNT(*) FROM marketplace_products").fetchone()[0]
     
-    # Financial Valuations without NaN
     all_prods = conn.execute("SELECT actual_stock, damage, price_after_tax, price FROM products").fetchall()
     total_inventory_val = 0.0
     total_damage_loss = 0.0
@@ -337,11 +344,7 @@ def get_stats():
         total_damage_loss += float(p['damage'] or 0) * unit_p
     
     top_stocks = conn.execute("SELECT description, actual_stock FROM products ORDER BY actual_stock DESC LIMIT 6").fetchall()
-    
-    # Brand Breakdown for Analytics
     brand_breakdown = conn.execute("SELECT brand, COUNT(*), SUM(actual_stock) FROM products GROUP BY brand ORDER BY SUM(actual_stock) DESC LIMIT 5").fetchall()
-    
-    # Country Marketplace Breakdown
     marketplace_breakdown = conn.execute("SELECT marketplace_label, COUNT(*), AVG(margin) FROM marketplace_products GROUP BY marketplace_label").fetchall()
     
     conn.close()
