@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Warehouse Command Hub</title>
+    <title>Enterprise Warehouse & Global Margin Hub Pro</title>
     <!-- Bootstrap 5, Icons & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ---------------- THEME VARIABLES ---------------- */
+        /* ---------------- DUAL THEME ENGINE WITH NATIVE COLOR-SCHEME ---------------- */
         :root {
+            color-scheme: light;
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
@@ -35,6 +36,7 @@
         }
 
         [data-theme="dark"] {
+            color-scheme: dark;
             --bg-body: #070b14;
             --card-bg: #0f172a;
             --text-main: #f8fafc;
@@ -76,14 +78,14 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
         }
 
-        /* High Contrast Labels across all tabs */
+        /* Form Labels & Headings */
         .theme-label { 
             color: var(--text-label) !important; 
             font-weight: 700 !important; 
             font-size: 0.82rem !important; 
             letter-spacing: 0.3px; 
             display: block; 
-            margin-bottom: 4px; 
+            margin-bottom: 5px; 
         }
         
         h1, h2, h3, h4, h5, h6, .card-title, .modal-title, .theme-heading { 
@@ -99,7 +101,7 @@
         }
         [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
 
-        /* Form Inputs & Search Groups with Highlighted Icons */
+        /* Form Inputs & Autocomplete Datalist Box */
         .form-control, .form-select, .input-group-text { 
             background-color: var(--input-bg) !important; 
             color: var(--input-text) !important; 
@@ -219,8 +221,8 @@
                         <i class="bi bi-shield-lock-fill fs-1"></i>
                     </span>
                 </div>
-                <h4 class="fw-bold mb-1">Warehouse Command Center</h4>
-                <p class="text-muted small mb-4">Enterprise Inventory Hub</p>
+                <h4 class="fw-bold mb-1">Warehouse Command Hub</h4>
+                <p class="text-muted small mb-4">Enterprise Inventory & Margins</p>
                 
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold theme-label">Username</label>
@@ -278,7 +280,7 @@
                 <a class="nav-link" data-bs-toggle="pill" href="#ledgerTab" onclick="loadLedger()"><i class="bi bi-journal-check me-1"></i> Item Ledger</a>
             </li>
             <li class="nav-item master-only">
-                <a class="nav-link" data-bs-toggle="pill" href="#activityTab" onclick="loadActivityLogs()"><i class="bi bi-broadcast me-1"></i> Live Audit Feed</a>
+                <a class="nav-link" data-bs-toggle="pill" href="#activityTab" onclick="loadActivityLogs()"><i class="bi bi-person-badge me-1"></i> Worker Shift Monitor</a>
             </li>
             <li class="nav-item master-only">
                 <a class="nav-link" id="marginTabLink" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaceData()"><i class="bi bi-globe2 me-1"></i> Global Margins (Confidential)</a>
@@ -330,8 +332,8 @@
                     <div class="col-md-5">
                         <div class="card p-3 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0 theme-heading"><i class="bi bi-broadcast text-danger"></i> Recent Warehouse Activity</h6>
-                                <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-bold" onclick="switchToActivityTab()">View All &rarr;</a>
+                                <h6 class="fw-bold mb-0 theme-heading"><i class="bi bi-broadcast text-danger"></i> Recent Floor Movements</h6>
+                                <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-bold" onclick="switchToActivityTab()">Monitor All &rarr;</a>
                             </div>
                             <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
                                 <table class="table table-sm table-hover align-middle mb-0">
@@ -427,14 +429,26 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-pie-chart-fill text-primary"></i> Top Brands Inventory Distribution</h6>
-                            <canvas id="brandChart" style="max-height: 260px;"></canvas>
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-pie-chart-fill text-primary"></i> Inventory Health Status Ratio</h6>
+                            <canvas id="healthChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-activity text-danger"></i> Warehouse Operations Breakdown</h6>
+                            <canvas id="opsChart" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
                             <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-globe-americas text-success"></i> Marketplace Average Margin Performance</h6>
-                            <canvas id="marketplaceChart" style="max-height: 260px;"></canvas>
+                            <canvas id="marketplaceChart" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card p-3 h-100">
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-pie-chart text-info"></i> Top Brands Stock Distribution</h6>
+                            <canvas id="brandChart" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -481,24 +495,58 @@
                 </div>
             </div>
 
-            <!-- TAB 5: DEDICATED LIVE AUDIT STREAM (Master Only) -->
+            <!-- TAB 5: WORKER SHIFT & LIVE FLOOR MONITOR (Master Only) -->
             <div class="tab-pane fade master-only" id="activityTab">
+                <!-- Master Floor Monitor Filter Bar -->
                 <div class="card p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold mb-0 theme-heading"><i class="bi bi-broadcast text-danger me-2"></i>Live Operator & System Audit Stream</h6>
-                        <div class="d-flex gap-2">
-                            <select id="auditActionFilter" class="form-select form-select-sm" onchange="loadActivityLogs()">
+                    <div class="row g-3 align-items-center justify-content-between">
+                        <div class="col-md-4">
+                            <label class="theme-label"><i class="bi bi-person-bounding-box text-primary"></i> Select Operator / Worker</label>
+                            <select id="workerMonitorSelect" class="form-select fw-bold" onchange="loadWorkerMonitorData()">
+                                <option value="ALL">-- All Operators & System Logs --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="theme-label"><i class="bi bi-filter-circle"></i> Operation Type</label>
+                            <select id="auditActionFilter" class="form-select" onchange="loadActivityLogs()">
                                 <option value="ALL">All Actions</option>
                                 <option value="RECEIVE">RECEIVES (+)</option>
                                 <option value="ISSUE">ISSUES (-)</option>
                                 <option value="DAMAGE">DAMAGES</option>
                                 <option value="UNDO">UNDOS</option>
                             </select>
-                            <button class="btn btn-sm btn-outline-primary" onclick="loadActivityLogs()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                        </div>
+                        <div class="col-md-5 text-end pt-3 d-flex justify-content-end gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="exportWorkerLogCsv()"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Worker Log CSV</button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadActivityLogs()"><i class="bi bi-arrow-clockwise"></i> Refresh Feed</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Worker Shift Live Stats Card -->
+                <div class="row g-3 mb-3" id="workerSpecificStatsRow">
+                    <div class="col-md-4">
+                        <div class="card p-3 badge-subtle-success border">
+                            <span class="small fw-bold">OPERATOR TODAY RECEIVED</span>
+                            <h4 class="fw-bold mb-0 text-success" id="monitorTodayReceived">0</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3 badge-subtle-danger border">
+                            <span class="small fw-bold">OPERATOR TODAY ISSUED</span>
+                            <h4 class="fw-bold mb-0 text-danger" id="monitorTodayIssued">0</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card p-3 badge-subtle-primary border">
+                            <span class="small fw-bold">TOTAL OPERATIONS LOGGED</span>
+                            <h4 class="fw-bold mb-0 text-primary" id="monitorTodayOps">0</h4>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card p-3">
+                    <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-list-check text-primary"></i> Detailed Floor Activity Trail</h6>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead>
@@ -777,9 +825,13 @@ let activeAdjustmentProdId = null;
 let activeActionType = 'RECEIVE';
 let selectedLedgerProdId = '';
 let lastLogId = null;
+
 let topChartInstance = null;
-let brandChartInstance = null;
+let healthChartInstance = null;
+let opsChartInstance = null;
 let mpChartInstance = null;
+let brandChartInstance = null;
+
 let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj, toastObj;
 
 (function initTheme() {
@@ -1050,6 +1102,13 @@ async function loadDashboard() {
         </tr>
         `;
     }).join('');
+
+    // Populate Worker Dropdown in Monitor
+    const workerSelect = document.getElementById('workerMonitorSelect');
+    if(workerSelect && stats.users_list) {
+        workerSelect.innerHTML = '<option value="ALL">-- All Operators & System Logs --</option>' + 
+            stats.users_list.map(u => `<option value="${u.username}">Operator: ${u.username} (${u.role.toUpperCase()})</option>`).join('');
+    }
 }
 
 async function loadAnalytics() {
@@ -1058,15 +1117,16 @@ async function loadAnalytics() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const textColor = isDark ? '#e2e8f0' : '#475569';
     
-    const ctxBrand = document.getElementById('brandChart').getContext('2d');
-    if(brandChartInstance) brandChartInstance.destroy();
-    brandChartInstance = new Chart(ctxBrand, {
+    // 1. Health Status Chart
+    const ctxHealth = document.getElementById('healthChart').getContext('2d');
+    if(healthChartInstance) healthChartInstance.destroy();
+    healthChartInstance = new Chart(ctxHealth, {
         type: 'doughnut',
         data: {
-            labels: stats.brand_breakdown.map(b => b.brand),
+            labels: stats.stock_health.map(h => h.status),
             datasets: [{
-                data: stats.brand_breakdown.map(b => b.qty),
-                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7']
+                data: stats.stock_health.map(h => h.count),
+                backgroundColor: stats.stock_health.map(h => h.color)
             }]
         },
         options: { 
@@ -1076,6 +1136,26 @@ async function loadAnalytics() {
         }
     });
 
+    // 2. Warehouse Operations Breakdown
+    const ctxOps = document.getElementById('opsChart').getContext('2d');
+    if(opsChartInstance) opsChartInstance.destroy();
+    opsChartInstance = new Chart(ctxOps, {
+        type: 'pie',
+        data: {
+            labels: ['Total Received Units', 'Total Issued Units', 'Damaged Units'],
+            datasets: [{
+                data: [stats.activity_breakdown.receives, stats.activity_breakdown.issues, stats.activity_breakdown.damages],
+                backgroundColor: ['#10b981', '#ef4444', '#f59e0b']
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
+
+    // 3. Marketplace Comparison Chart
     const ctxMp = document.getElementById('marketplaceChart').getContext('2d');
     if(mpChartInstance) mpChartInstance.destroy();
     mpChartInstance = new Chart(ctxMp, {
@@ -1099,6 +1179,31 @@ async function loadAnalytics() {
             plugins: { legend: { labels: { color: textColor } } }
         }
     });
+
+    // 4. Top Brands Stock
+    const ctxBrand = document.getElementById('brandChart').getContext('2d');
+    if(brandChartInstance) brandChartInstance.destroy();
+    const brandMap = {};
+    allProducts.forEach(p => {
+        const b = p.brand || 'GENERAL';
+        brandMap[b] = (brandMap[b] || 0) + p.actual_stock;
+    });
+    const topBrands = Object.entries(brandMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+    brandChartInstance = new Chart(ctxBrand, {
+        type: 'doughnut',
+        data: {
+            labels: topBrands.map(b => b[0]),
+            datasets: [{
+                data: topBrands.map(b => b[1]),
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#a855f7']
+            }]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: textColor } } }
+        }
+    });
 }
 
 function switchToActivityTab() {
@@ -1107,13 +1212,29 @@ function switchToActivityTab() {
     loadActivityLogs();
 }
 
+async function loadWorkerMonitorData() {
+    const selectedOp = document.getElementById('workerMonitorSelect').value;
+    if(selectedOp !== 'ALL') {
+        const res = await fetch(`/api/worker-stats?username=${encodeURIComponent(selectedOp)}`);
+        const data = await res.json();
+        document.getElementById('monitorTodayReceived').innerText = Number(data.today_received).toLocaleString();
+        document.getElementById('monitorTodayIssued').innerText = Number(data.today_issued).toLocaleString();
+        document.getElementById('monitorTodayOps').innerText = data.today_ops;
+        document.getElementById('workerSpecificStatsRow').classList.remove('d-none');
+    } else {
+        document.getElementById('workerSpecificStatsRow').classList.add('d-none');
+    }
+    loadActivityLogs();
+}
+
 async function loadActivityLogs() {
     const actionFilter = document.getElementById('auditActionFilter').value;
-    const res = await fetch(`/api/ledger?action=${actionFilter}`);
+    const operatorFilter = document.getElementById('workerMonitorSelect') ? document.getElementById('workerMonitorSelect').value : 'ALL';
+    const res = await fetch(`/api/ledger?action=${actionFilter}&operator=${encodeURIComponent(operatorFilter)}`);
     const logs = await res.json();
     const tbody = document.getElementById('detailedActivityBody');
     if(!Array.isArray(logs) || logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No activity transactions found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No activity movements found for this selection.</td></tr>`;
         return;
     }
     tbody.innerHTML = logs.map(l => {
@@ -1125,13 +1246,18 @@ async function loadActivityLogs() {
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
             <td><strong style="color: var(--text-heading);">${l.product_desc}</strong></td>
             <td>${userBadge}</td>
-            <td class="fw-bold">${l.quantity}</td>
+            <td class="fw-bold text-white">${l.quantity}</td>
             <td style="color: var(--table-sub-text);">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
             <td class="small" style="color: var(--table-sub-text);">${l.details || ''}</td>
         </tr>
         `;
     }).join('');
+}
+
+function exportWorkerLogCsv() {
+    const operator = document.getElementById('workerMonitorSelect').value;
+    window.location.href = `/api/export/ledger-csv?operator=${encodeURIComponent(operator)}`;
 }
 
 async function loadProducts() {
