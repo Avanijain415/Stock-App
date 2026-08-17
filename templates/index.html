@@ -1,21 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Warehouse & Global Margin Hub Pro</title>
+    <title>Enterprise Warehouse & Supply Chain ERP</title>
     <!-- Bootstrap 5, Icons & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ---------------- ROOT THEME VARIABLES ---------------- */
         :root {
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
-            --text-heading: #1e293b;
+            --text-heading: #0f172a;
             --text-muted: #64748b;
             --nav-bg: #0f172a;
             --border-color: #e2e8f0;
@@ -29,7 +28,7 @@
             --badge-bg: #f1f5f9;
             --table-hover: #f8fafc;
             --table-row-text: #0f172a;
-            --table-sub-text: #475569;
+            --table-sub-text: #64748b;
         }
 
         [data-theme="dark"] {
@@ -50,7 +49,6 @@
             --table-sub-text: #94a3b8;
         }
 
-        /* Global Reset with Highest Specificity */
         body { 
             background-color: var(--bg-body) !important; 
             color: var(--text-main) !important; 
@@ -67,18 +65,14 @@
             background-color: var(--card-bg) !important; 
             border: 1px solid var(--border-color) !important; 
             border-radius: 14px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
         }
 
-        /* Text Contrast Enforcements */
-        h1, h2, h3, h4, h5, h6, .card-title, .modal-title { color: var(--text-heading) !important; }
-        .text-card-label { color: #94a3b8 !important; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.6px; text-transform: uppercase; }
+        h1, h2, h3, h4, h5, h6, .card-title, .modal-title, .theme-heading { color: var(--text-heading) !important; }
+        .text-card-label { color: var(--text-muted) !important; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.6px; text-transform: uppercase; }
         [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
         .text-card-sub { color: var(--text-muted) !important; font-size: 0.82rem; }
-        .text-muted { color: var(--text-muted) !important; }
-        .text-dark { color: var(--text-heading) !important; }
 
-        /* Form Inputs & Selects in Dark/Light */
         .form-control, .form-select, .input-group-text { 
             background-color: var(--input-bg) !important; 
             color: var(--text-main) !important; 
@@ -93,11 +87,10 @@
             box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25) !important;
         }
         .form-select option {
-            background-color: var(--card-bg);
-            color: var(--text-main);
+            background-color: var(--card-bg) !important;
+            color: var(--text-main) !important;
         }
 
-        /* Nav Pills Navigation */
         .nav-pills .nav-link { 
             color: var(--text-muted) !important; 
             font-weight: 600; 
@@ -109,7 +102,6 @@
         .nav-pills .nav-link:hover { color: var(--text-main) !important; background-color: var(--badge-bg); }
         .nav-pills .nav-link.active { background-color: var(--primary) !important; color: #ffffff !important; font-weight: 700; }
 
-        /* Tables & Row Typography */
         .table { 
             color: var(--table-row-text) !important; 
             --bs-table-bg: transparent !important; 
@@ -130,34 +122,22 @@
         }
         .table-hover tbody tr:hover { background-color: var(--table-hover) !important; }
         .table strong { color: var(--text-heading) !important; font-weight: 600; }
-        .table small, .table .small-sub { color: var(--table-sub-text) !important; }
+        .table small { color: var(--table-sub-text) !important; }
 
-        /* Badges & Chips */
         .badge-subtle-primary { background-color: rgba(59, 130, 246, 0.18) !important; color: #60a5fa !important; border: 1px solid rgba(59, 130, 246, 0.3); }
         .badge-subtle-success { background-color: rgba(16, 185, 129, 0.18) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.3); }
         .badge-subtle-danger { background-color: rgba(239, 68, 68, 0.18) !important; color: #f87171 !important; border: 1px solid rgba(239, 68, 68, 0.3); }
         .badge-subtle-warning { background-color: rgba(245, 158, 11, 0.18) !important; color: #fbbf24 !important; border: 1px solid rgba(245, 158, 11, 0.3); }
         .badge-subtle-dark { background-color: var(--badge-bg) !important; color: var(--text-main) !important; border: 1px solid var(--border-color) !important; }
 
-        /* Negative Margin High-Alert Row */
-        .negative-margin-row { background-color: rgba(239, 68, 68, 0.1) !important; }
-
-        /* Custom Stat Cards Borders */
         .stat-card-blue { border-left: 4px solid #3b82f6 !important; }
         .stat-card-red { border-left: 4px solid #ef4444 !important; }
         .stat-card-yellow { border-left: 4px solid #f59e0b !important; }
         .stat-card-purple { border-left: 4px solid #a855f7 !important; }
 
-        /* Filter Pills */
         .filter-btn { border-radius: 20px; font-size: 0.82rem; font-weight: 600; padding: 5px 14px; }
         [data-theme="dark"] .filter-btn.btn-outline-secondary { color: #cbd5e1 !important; border-color: var(--input-border) !important; }
         [data-theme="dark"] .filter-btn.btn-outline-secondary:hover { background-color: var(--badge-bg) !important; color: #fff !important; }
-
-        /* Buttons High Contrast */
-        [data-theme="dark"] .btn-outline-secondary { color: #cbd5e1 !important; border-color: var(--input-border) !important; }
-        [data-theme="dark"] .btn-outline-secondary:hover { background-color: #1e293b !important; color: #fff !important; }
-        [data-theme="dark"] .btn-outline-success { color: #34d399 !important; border-color: #059669 !important; }
-        [data-theme="dark"] .btn-outline-success:hover { background-color: #059669 !important; color: #fff !important; }
 
         .modal-content { 
             background-color: var(--card-bg) !important; 
@@ -175,11 +155,11 @@
 </head>
 <body>
 
-<!-- Toast Notification Area -->
+<!-- Toast Notification -->
 <div class="toast-container">
     <div id="actionToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert">
         <div class="d-flex">
-            <div class="toast-body fw-semibold" id="toastMessage">Action completed successfully</div>
+            <div class="toast-body fw-semibold" id="toastMessage">Operation successful</div>
             <button id="toastUndoBtn" class="btn btn-sm btn-warning me-2 my-auto px-2 py-0 fw-bold d-none" onclick="triggerUndo()">UNDO</button>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
@@ -196,24 +176,24 @@
                         <i class="bi bi-shield-lock-fill fs-1"></i>
                     </span>
                 </div>
-                <h4 class="fw-bold mb-1">Enterprise ERP Portal</h4>
-                <p class="text-muted small mb-4">Warehouse Operations & Margin Tracking</p>
+                <h4 class="fw-bold mb-1">Sign In</h4>
+                <p class="text-muted small mb-4">Warehouse Portal</p>
                 
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
-                    <input type="text" id="username" class="form-control" placeholder="master / worker1">
+                    <input type="text" id="username" class="form-control" placeholder="Username">
                 </div>
                 
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="••••••••">
+                    <input type="password" id="password" class="form-control" placeholder="Password">
                 </div>
 
                 <div class="d-flex justify-content-end mb-4">
                     <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-semibold" onclick="openForgotModal()">Forgot Password?</a>
                 </div>
 
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In to Dashboard</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In</button>
             </div>
         </div>
     </div>
@@ -258,7 +238,7 @@
                 <a class="nav-link" data-bs-toggle="pill" href="#activityTab" onclick="loadActivityLogs()"><i class="bi bi-broadcast me-1"></i> Live Audit Feed</a>
             </li>
             <li class="nav-item master-only">
-                <a class="nav-link" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaceData()"><i class="bi bi-globe2 me-1"></i> Global Margins (Confidential)</a>
+                <a class="nav-link" id="marginTabLink" data-bs-toggle="pill" href="#marginTab" onclick="loadMarketplaceData()"><i class="bi bi-globe2 me-1"></i> Global Margins (Confidential)</a>
             </li>
         </ul>
 
@@ -271,7 +251,7 @@
                         <div class="card p-3 stat-card-blue">
                             <span class="text-card-label">TOTAL INVENTORY ASSET</span>
                             <h3 class="fw-bold my-1 text-primary" id="statAssetVal">₹0.00</h3>
-                            <span class="text-card-sub"><span id="statTotalItems" class="fw-bold text-white">0</span> SKUs (<span id="statTotalQty" class="fw-bold text-white">0</span> Units)</span>
+                            <span class="text-card-sub"><span id="statTotalItems" class="fw-bold">0</span> SKUs (<span id="statTotalQty" class="fw-bold">0</span> Units)</span>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -300,14 +280,14 @@
                 <div class="row g-3">
                     <div class="col-md-7">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Volume SKUs</h6>
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-bar-chart-fill text-primary"></i> Top Warehouse Volume SKUs</h6>
                             <canvas id="topStockChart" style="max-height: 280px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-5">
                         <div class="card p-3 h-100">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="fw-bold mb-0"><i class="bi bi-broadcast text-danger"></i> Recent Warehouse Activity</h6>
+                                <h6 class="fw-bold mb-0 theme-heading"><i class="bi bi-broadcast text-danger"></i> Recent Warehouse Activity</h6>
                                 <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-bold" onclick="switchToActivityTab()">View All &rarr;</a>
                             </div>
                             <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
@@ -326,7 +306,7 @@
                 <div class="card p-3 mb-3 border-primary border-opacity-25 no-print" id="workerShiftCard">
                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div>
-                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Shift Inventory Operations (IST)</h6>
+                            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-person-workspace"></i> My Shift Operations (IST)</h6>
                             <span class="text-card-sub">Live movements recorded today on warehouse floor</span>
                         </div>
                         <div class="d-flex gap-3">
@@ -357,9 +337,8 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <select id="invBrandFilter" class="form-select" onchange="filterInventory()">
-                                <option value="">All Brands</option>
-                            </select>
+                            <input list="brandOptions" id="invBrandFilter" class="form-control" placeholder="Filter by Brand (Type or select)" oninput="filterInventory()">
+                            <datalist id="brandOptions"></datalist>
                         </div>
                         <div class="col-md-4 text-end d-flex justify-content-end gap-2">
                             <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Sheet</button>
@@ -386,7 +365,7 @@
                                     <th style="width: 60px;">ID</th>
                                     <th>Product Information</th>
                                     <th>Brand / Origin</th>
-                                    <th>Price / MRP</th>
+                                    <th>Unit Cost</th>
                                     <th class="text-center">Actual Stock</th>
                                     <th>Damage</th>
                                     <th>Status</th>
@@ -405,13 +384,13 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill text-primary"></i> Top Brands Inventory Distribution</h6>
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-pie-chart-fill text-primary"></i> Top Brands Inventory Distribution</h6>
                             <canvas id="brandChart" style="max-height: 260px;"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="card p-3 h-100">
-                            <h6 class="fw-bold mb-3"><i class="bi bi-globe-americas text-success"></i> Marketplace Average Margin Performance</h6>
+                            <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-globe-americas text-success"></i> Marketplace Average Margin Performance</h6>
                             <canvas id="marketplaceChart" style="max-height: 260px;"></canvas>
                         </div>
                     </div>
@@ -422,11 +401,14 @@
             <div class="tab-pane fade" id="ledgerTab">
                 <div class="card p-3 mb-3 no-print">
                     <div class="row g-2 align-items-center justify-content-between">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-1">Filter Timeline By Specific Product</label>
-                            <select id="ledgerProductSelect" class="form-select fw-semibold" onchange="loadProductLedger()">
-                                <option value="">-- All Recent Warehouse Transactions --</option>
-                            </select>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-bold text-muted mb-1">Search & Filter Timeline By Specific Product</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                                <input list="ledgerProductOptions" id="ledgerSearchInput" class="form-control fw-semibold" placeholder="Type product name or ID to filter ledger..." oninput="handleLedgerSearchInput(this.value)">
+                                <button class="btn btn-outline-secondary" onclick="clearLedgerSearch()"><i class="bi bi-x-lg"></i> Reset</button>
+                            </div>
+                            <datalist id="ledgerProductOptions"></datalist>
                         </div>
                         <div class="col-md-4 text-end pt-3">
                             <button class="btn btn-outline-success btn-sm" onclick="exportLedgerCsv()"><i class="bi bi-download me-1"></i> Export Audit Ledger CSV</button>
@@ -435,7 +417,7 @@
                 </div>
 
                 <div class="card p-3">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Complete Audit Trail & Ledger Timeline</h6>
+                    <h6 class="fw-bold mb-3 theme-heading"><i class="bi bi-clock-history text-primary"></i> Complete Audit Trail & Ledger Timeline</h6>
                     <div class="table-responsive">
                         <table class="table table-striped table-hover align-middle mb-0">
                             <thead>
@@ -460,7 +442,7 @@
             <div class="tab-pane fade master-only" id="activityTab">
                 <div class="card p-3 mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold mb-0 text-white"><i class="bi bi-broadcast text-danger me-2"></i>Live Operator & System Audit Stream</h6>
+                        <h6 class="fw-bold mb-0 theme-heading"><i class="bi bi-broadcast text-danger me-2"></i>Live Operator & System Audit Stream</h6>
                         <div class="d-flex gap-2">
                             <select id="auditActionFilter" class="form-select form-select-sm" onchange="loadActivityLogs()">
                                 <option value="ALL">All Actions</option>
@@ -593,8 +575,8 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Remarks / Invoice # (Optional)</label>
-                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="e.g. Invoice #1024, Damage Batch">
+                    <label class="form-label small fw-bold">Remarks (Optional)</label>
+                    <input type="text" id="modalRemarksInput" class="form-control" placeholder="Invoice reference / note">
                 </div>
 
                 <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitStockAdjustment()">Confirm Stock Update</button>
@@ -608,31 +590,31 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-4">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Product to Warehouse</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Product</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">Product Description / Title *</label>
-                    <input type="text" id="newDesc" class="form-control" placeholder="e.g. Exotic Veda Turmeric Powder 200g">
+                    <label class="form-label small fw-bold">Description *</label>
+                    <input type="text" id="newDesc" class="form-control" placeholder="Product Title">
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label small fw-bold">Brand</label>
-                        <input type="text" id="newBrand" class="form-control" placeholder="e.g. EXOTIC VEDA">
+                        <input type="text" id="newBrand" class="form-control" placeholder="Brand Name">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Country of Origin</label>
+                        <label class="form-label small fw-bold">Country</label>
                         <input type="text" id="newCountry" class="form-control" value="INDIA">
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label small fw-bold">HSN Code</label>
-                        <input type="text" id="newHsn" class="form-control" placeholder="33049910">
+                        <input type="text" id="newHsn" class="form-control" placeholder="HSN Code">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Initial Opening Stock</label>
+                        <label class="form-label small fw-bold">Initial Stock</label>
                         <input type="number" id="newOpening" class="form-control" value="0">
                     </div>
                 </div>
@@ -646,7 +628,7 @@
                         <input type="number" step="0.01" id="newMrp" class="form-control" placeholder="0.00">
                     </div>
                 </div>
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitNewProduct()">Save Product to Catalog</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitNewProduct()">Save Product</button>
             </div>
         </div>
     </div>
@@ -657,13 +639,13 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-4">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Product Information</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Product</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editProdId">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">Product Description *</label>
+                    <label class="form-label small fw-bold">Description *</label>
                     <input type="text" id="editDesc" class="form-control">
                 </div>
                 <div class="row g-2 mb-2">
@@ -688,7 +670,7 @@
                 </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <label class="form-label small fw-bold">Price (₹)</label>
                         <input type="number" step="0.01" id="editPrice" class="form-control">
                     </div>
                     <div class="col-6">
@@ -696,7 +678,7 @@
                         <input type="number" step="0.01" id="editMrp" class="form-control">
                     </div>
                 </div>
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitEditProduct()">Update Product Details</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="submitEditProduct()">Update Product</button>
             </div>
         </div>
     </div>
@@ -707,7 +689,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content p-3">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="detailModalTitle">Product Specifications</h5>
+                <h5 class="modal-title fw-bold" id="detailModalTitle">Product Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="detailModalBody"></div>
@@ -724,20 +706,19 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted small mb-3">Enter username and the Master Recovery PIN to reset password.</p>
                 <div class="mb-3 text-start">
                     <label class="form-label small fw-bold">Username</label>
-                    <input type="text" id="resetUsername" class="form-control" placeholder="master / worker1">
+                    <input type="text" id="resetUsername" class="form-control" placeholder="Username">
                 </div>
                 <div class="mb-3 text-start">
-                    <label class="form-label small fw-bold">Master Recovery PIN</label>
-                    <input type="password" id="resetPin" class="form-control" placeholder="Default PIN: 2026">
+                    <label class="form-label small fw-bold">Master PIN</label>
+                    <input type="password" id="resetPin" class="form-control" placeholder="PIN">
                 </div>
                 <div class="mb-4 text-start">
                     <label class="form-label small fw-bold">New Password</label>
-                    <input type="password" id="resetNewPassword" class="form-control" placeholder="Enter new password">
+                    <input type="password" id="resetNewPassword" class="form-control" placeholder="New Password">
                 </div>
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handlePasswordReset()">Reset Password Now</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handlePasswordReset()">Reset</button>
             </div>
         </div>
     </div>
@@ -751,6 +732,7 @@ let rawMarketplaceItems = [];
 let activeStatusFilter = 'ALL';
 let activeAdjustmentProdId = null;
 let activeActionType = 'RECEIVE';
+let selectedLedgerProdId = '';
 let lastLogId = null;
 let topChartInstance = null;
 let brandChartInstance = null;
@@ -758,7 +740,7 @@ let mpChartInstance = null;
 let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj, toastObj;
 
 (function initTheme() {
-    const saved = localStorage.getItem('erp-theme') || 'dark';
+    const saved = localStorage.getItem('erp-theme') || 'light';
     document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 })();
@@ -829,7 +811,7 @@ function openAddProductModal() { addProdModalObj.show(); }
 
 async function submitNewProduct() {
     const desc = document.getElementById('newDesc').value.trim();
-    if(!desc) { alert('Please enter product description'); return; }
+    if(!desc) { alert('Please enter description'); return; }
     
     const body = {
         description: desc,
@@ -854,7 +836,7 @@ async function submitNewProduct() {
         loadProducts();
         if(currentUser.role === 'master') loadDashboard();
     } else {
-        alert('Error: ' + data.message);
+        alert(data.message);
     }
 }
 
@@ -896,12 +878,12 @@ async function submitEditProduct() {
         editProdModalObj.hide();
         loadProducts();
     } else {
-        alert('Error: ' + data.message);
+        alert(data.message);
     }
 }
 
 async function deleteProduct(prodId, desc) {
-    if(!confirm(`Are you sure you want to PERMANENTLY DELETE product #${prodId}?\n"${desc}"`)) return;
+    if(!confirm(`Delete product #${prodId}?\n"${desc}"`)) return;
     const res = await fetch(`/api/products/delete/${prodId}`, {method: 'DELETE'});
     const data = await res.json();
     if(res.ok) {
@@ -909,7 +891,7 @@ async function deleteProduct(prodId, desc) {
         loadProducts();
         loadDashboard();
     } else {
-        alert('Error: ' + data.message);
+        alert(data.message);
     }
 }
 
@@ -917,7 +899,7 @@ async function handlePasswordReset() {
     const u = document.getElementById('resetUsername').value.trim();
     const pin = document.getElementById('resetPin').value.trim();
     const newPass = document.getElementById('resetNewPassword').value.trim();
-    if(!u || !pin || !newPass) { alert('Please fill all fields'); return; }
+    if(!u || !pin || !newPass) { alert('All fields required'); return; }
     
     const res = await fetch('/api/reset-password', {
         method: 'POST',
@@ -929,7 +911,7 @@ async function handlePasswordReset() {
         alert(data.message);
         forgotModalObj.hide();
     } else {
-        alert('Error: ' + data.message);
+        alert(data.message);
     }
 }
 
@@ -961,7 +943,7 @@ async function handleLogin() {
         loadProducts();
         loadLedger();
     } else {
-        alert('Invalid login credentials');
+        alert('Invalid username or password');
     }
 }
 
@@ -1020,7 +1002,7 @@ async function loadDashboard() {
         return `
         <tr>
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
-            <td><strong class="d-block" style="color: var(--text-heading); font-size: 0.88rem;">${l.product_desc}</strong></td>
+            <td><strong class="d-block" style="font-size: 0.88rem;">${l.product_desc}</strong></td>
             <td class="text-end small">${userBadge}</td>
         </tr>
         `;
@@ -1087,7 +1069,7 @@ async function loadActivityLogs() {
     const res = await fetch(`/api/ledger?action=${actionFilter}`);
     const logs = await res.json();
     const tbody = document.getElementById('detailedActivityBody');
-    if(logs.length === 0) {
+    if(!Array.isArray(logs) || logs.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No activity transactions found.</td></tr>`;
         return;
     }
@@ -1100,7 +1082,7 @@ async function loadActivityLogs() {
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
             <td><strong style="color: var(--text-heading);">${l.product_desc}</strong></td>
             <td>${userBadge}</td>
-            <td class="fw-bold text-white">${l.quantity}</td>
+            <td class="fw-bold">${l.quantity}</td>
             <td style="color: var(--table-sub-text);">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
             <td class="small" style="color: var(--table-sub-text);">${l.details || ''}</td>
@@ -1119,25 +1101,50 @@ async function loadProducts() {
     document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
     document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
-    const brandSelect = document.getElementById('invBrandFilter');
+    // Populate Brand Datalist
+    const brandDataList = document.getElementById('brandOptions');
     const brandMap = {};
     allProducts.forEach(p => {
         const b = p.brand || 'GENERAL';
         brandMap[b] = (brandMap[b] || 0) + 1;
     });
-    brandSelect.innerHTML = '<option value="">All Brands (All Products)</option>' + 
-        Object.keys(brandMap).sort().map(b => `<option value="${b}">${b} (${brandMap[b]} items)</option>`).join('');
+    brandDataList.innerHTML = Object.keys(brandMap).sort().map(b => `<option value="${b}">${b} (${brandMap[b]} items)</option>`).join('');
 
-    const ledgerSelect = document.getElementById('ledgerProductSelect');
-    ledgerSelect.innerHTML = '<option value="">-- All Recent Warehouse Transactions --</option>' + 
-        allProducts.map(p => `<option value="${p.id}">#${p.id} - ${p.description}</option>`).join('');
+    // Populate Searchable Ledger Options
+    const ledgerOptions = document.getElementById('ledgerProductOptions');
+    ledgerOptions.innerHTML = allProducts.map(p => `<option value="#${p.id} - ${p.description}">ID: ${p.id} | Stock: ${p.actual_stock}</option>`).join('');
 
     filterInventory();
 }
 
+function handleLedgerSearchInput(val) {
+    if(!val || val.trim() === '') {
+        selectedLedgerProdId = '';
+        loadLedger('');
+        return;
+    }
+    const match = val.match(/^#?(\d+)/);
+    if(match) {
+        selectedLedgerProdId = match[1];
+        loadLedger(selectedLedgerProdId);
+    } else {
+        const found = allProducts.find(p => p.description.toLowerCase().includes(val.toLowerCase()));
+        if(found) {
+            selectedLedgerProdId = found.id;
+            loadLedger(found.id);
+        }
+    }
+}
+
+function clearLedgerSearch() {
+    document.getElementById('ledgerSearchInput').value = '';
+    selectedLedgerProdId = '';
+    loadLedger('');
+}
+
 function renderInventory(items) {
     const tbody = document.getElementById('inventoryTableBody');
-    if(items.length === 0) {
+    if(!Array.isArray(items) || items.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No matching inventory products found.</td></tr>`;
         return;
     }
@@ -1147,20 +1154,23 @@ function renderInventory(items) {
     tbody.innerHTML = items.map(p => {
         const stockClass = p.actual_stock > 10 ? 'text-success' : (p.actual_stock > 0 ? 'text-warning' : 'text-danger');
         const statusBadge = p.status === 'Completed' ? 'badge badge-subtle-success' : 'badge badge-subtle-warning';
+        const displayPrice = `₹${p.price}`;
+        const displayMrp = (p.mrp && p.mrp > 0 && p.mrp !== p.price) ? `<span class="small d-block" style="color: var(--table-sub-text);">MRP: ₹${p.mrp}</span>` : '';
+
         return `
         <tr>
             <td class="text-muted fw-bold">#${p.id}</td>
             <td>
-                <span class="fw-bold d-block" style="color: var(--text-heading); font-size: 0.95rem;">${p.description}</span>
-                <span class="small" style="color: var(--table-sub-text);">HSN: <strong class="text-white">${p.hsn_code || 'N/A'}</strong> | Expiry: <strong style="color: #cbd5e1;">${p.expiry_date || 'N/A'}</strong></span>
+                <span class="fw-bold d-block" style="font-size: 0.95rem;">${p.description}</span>
+                <span class="small" style="color: var(--table-sub-text);">HSN: <strong>${p.hsn_code || 'N/A'}</strong> | Expiry: <strong>${p.expiry_date || 'N/A'}</strong></span>
             </td>
             <td>
                 <span class="badge badge-subtle-dark">${p.brand}</span>
                 <span class="small d-block mt-1" style="color: var(--table-sub-text);">${p.country}</span>
             </td>
             <td>
-                <span class="fw-semibold text-white">₹${p.price}</span>
-                <span class="small d-block" style="color: var(--table-sub-text);">MRP: ₹${p.mrp}</span>
+                <span class="fw-semibold">${displayPrice}</span>
+                ${displayMrp}
             </td>
             <td class="text-center">
                 <span class="stock-badge ${stockClass}">${p.actual_stock}</span>
@@ -1203,16 +1213,17 @@ function setStatusFilter(filter, btn) {
 
 function clearSearch() {
     document.getElementById('invSearch').value = '';
+    document.getElementById('invBrandFilter').value = '';
     filterInventory();
 }
 
 function filterInventory() {
     const q = (document.getElementById('invSearch').value || '').toLowerCase().trim();
-    const brand = document.getElementById('invBrandFilter').value;
+    const brand = (document.getElementById('invBrandFilter').value || '').toLowerCase().trim();
     
     const filtered = allProducts.filter(p => {
         const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q));
-        const matchesBrand = brand === '' || p.brand === brand;
+        const matchesBrand = brand === '' || p.brand.toLowerCase().includes(brand);
         
         let matchesStatus = true;
         if(activeStatusFilter === 'IN_STOCK') matchesStatus = p.actual_stock > 10;
@@ -1266,7 +1277,7 @@ function setQty(val) { document.getElementById('modalQtyInput').value = val; }
 async function submitStockAdjustment() {
     const qty = parseInt(document.getElementById('modalQtyInput').value);
     const remarks = document.getElementById('modalRemarksInput').value.trim();
-    if(isNaN(qty) || qty <= 0) { alert('Please enter a valid quantity'); return; }
+    if(isNaN(qty) || qty <= 0) { alert('Enter valid quantity'); return; }
     
     let changeVal = qty;
     let mode = 'STOCK';
@@ -1281,7 +1292,7 @@ async function submitStockAdjustment() {
     const data = await res.json();
     if(res.ok) {
         stockModalObj.hide();
-        showToast(`${activeActionType} operation completed successfully!`, true, data.log_id);
+        showToast(`${activeActionType} completed!`, true, data.log_id);
         loadProducts();
         loadWorkerStats();
         if(currentUser.role === 'master') loadDashboard();
@@ -1296,13 +1307,13 @@ function openDetailModal(prodId) {
     document.getElementById('detailModalTitle').innerText = p.description;
     document.getElementById('detailModalBody').innerHTML = `
         <div class="row g-2">
-            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong class="text-white">${p.hsn_code || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong class="text-white">${p.brand} (${p.country})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Price / MRP</small><strong class="text-white">₹${p.price} (MRP: ₹${p.mrp})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Tax % / Price After Tax</small><strong class="text-white">${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong class="text-white">${p.per_petti || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong class="text-white">${p.expiry_date || 'N/A'}</strong></div>
-            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong class="text-white">${p.opening_stock}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">HSN Code</small><strong>${p.hsn_code || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Brand / Origin</small><strong>${p.brand} (${p.country})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Unit Cost</small><strong>₹${p.price}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Tax / Price After Tax</small><strong>${(p.tax*100).toFixed(0)}% (₹${p.price_after_tax})</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Units Per Petti</small><strong>${p.per_petti || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Expiry Date</small><strong>${p.expiry_date || 'N/A'}</strong></div>
+            <div class="col-6"><small class="text-muted d-block">Opening Stock</small><strong>${p.opening_stock}</strong></div>
             <div class="col-6"><small class="text-muted d-block">Damaged Units</small><strong class="text-danger">${p.damage}</strong></div>
         </div>
     `;
@@ -1314,20 +1325,20 @@ async function loadLedger(productId = '') {
     const res = await fetch(url);
     const logs = await res.json();
     const tbody = document.getElementById('fullLedgerBody');
-    if(logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history available.</td></tr>`;
+    if(!Array.isArray(logs) || logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ledger transaction history found.</td></tr>`;
         return;
     }
     tbody.innerHTML = logs.map(l => {
         const isSystem = l.username.toLowerCase().includes('excel') || l.username.toLowerCase().includes('system');
-        const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Import</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
+        const userBadge = isSystem ? '<span class="badge badge-subtle-dark">Excel Migration</span>' : `<span class="badge badge-subtle-primary">${l.username}</span>`;
         return `
         <tr>
             <td class="small" style="color: var(--table-sub-text);">${l.timestamp}</td>
-            <td><strong style="color: var(--text-heading);">${l.product_desc}</strong></td>
+            <td><strong>${l.product_desc}</strong></td>
             <td>${userBadge}</td>
             <td><span class="badge ${l.action==='RECEIVE'?'badge-subtle-success':(l.action==='ISSUE'?'badge-subtle-danger':(l.action==='UNDO'?'badge-subtle-dark':'badge-subtle-warning'))}">${l.action}</span></td>
-            <td class="fw-bold text-white">${l.quantity}</td>
+            <td class="fw-bold">${l.quantity}</td>
             <td style="color: var(--table-sub-text);">${l.prev_stock !== null ? l.prev_stock : '-'}</td>
             <td class="fw-bold text-primary">${l.new_stock !== null ? l.new_stock : '-'}</td>
             <td class="small" style="color: var(--table-sub-text);">${l.details || ''}</td>
@@ -1336,27 +1347,28 @@ async function loadLedger(productId = '') {
     }).join('');
 }
 
-function loadProductLedger() {
-    const prodId = document.getElementById('ledgerProductSelect').value;
-    loadLedger(prodId);
-}
-
 function viewSingleProductLedger(prodId) {
-    document.getElementById('ledgerProductSelect').value = prodId;
+    const p = allProducts.find(x => x.id === prodId);
+    if(p) {
+        document.getElementById('ledgerSearchInput').value = `#${p.id} - ${p.description}`;
+    }
+    selectedLedgerProdId = prodId;
     const ledgerTabTrigger = new bootstrap.Tab(document.querySelector('a[href="#ledgerTab"]'));
     ledgerTabTrigger.show();
     loadLedger(prodId);
 }
 
 function exportLedgerCsv() {
-    const prodId = document.getElementById('ledgerProductSelect').value;
+    const prodId = selectedLedgerProdId || '';
     window.location.href = `/api/export/ledger-csv?product_id=${prodId}`;
 }
 
 async function loadMarketplaceData() {
-    const mp = document.getElementById('marketplaceSelect').value;
-    const res = await fetch(`/api/marketplaces/products?marketplace=${mp}`);
-    rawMarketplaceItems = await res.json();
+    const mpSelect = document.getElementById('marketplaceSelect');
+    const mp = mpSelect ? mpSelect.value : 'GTUS';
+    const res = await fetch(`/api/marketplaces/products?marketplace=${encodeURIComponent(mp)}`);
+    const data = await res.json();
+    rawMarketplaceItems = Array.isArray(data) ? data : [];
     filterMarketplaceItems();
 }
 
@@ -1376,8 +1388,8 @@ function filterMarketplaceItems() {
 
 function renderMarketplaceTable(items) {
     const tbody = document.getElementById('marketplaceTableBody');
-    if(items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No matching marketplace pricing records found.</td></tr>`;
+    if(!Array.isArray(items) || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">No marketplace records available.</td></tr>`;
         return;
     }
 
@@ -1392,30 +1404,30 @@ function renderMarketplaceTable(items) {
         const inrMinSell = !isIndia && item.min_selling_rate ? (item.min_selling_rate * conv).toFixed(2) : null;
         
         return `
-        <tr class="${isNeg ? 'negative-margin-row' : ''}">
+        <tr>
             <td class="text-muted fw-bold">${idx + 1}</td>
             <td>
-                <strong class="d-block" style="color: #ffffff !important; font-size: 0.92rem;">${item.sku}</strong>
-                <span class="small" style="color: #94a3b8 !important;">ASIN: <strong style="color: #cbd5e1 !important;">${item.asin || 'N/A'}</strong></span>
+                <strong class="d-block" style="font-size: 0.92rem;">${item.sku}</strong>
+                <span class="small" style="color: var(--table-sub-text);">ASIN: <strong>${item.asin || 'N/A'}</strong></span>
             </td>
             <td>
-                <strong class="text-white d-block">${item.selling_price ? curr + item.selling_price.toFixed(2) : '-'}</strong>
-                ${inrSelling ? `<small style="color: #94a3b8 !important;">≈ ₹${inrSelling}</small>` : ''}
+                <strong class="d-block">${item.selling_price ? curr + item.selling_price.toFixed(2) : '-'}</strong>
+                ${inrSelling ? `<small style="color: var(--table-sub-text);">≈ ₹${inrSelling}</small>` : ''}
             </td>
             <td>
-                <span class="text-white">${item.fba_fee ? curr + item.fba_fee.toFixed(2) : '-'}</span>
-                ${inrFba ? `<br><small style="color: #94a3b8 !important;">≈ ₹${inrFba}</small>` : ''}
+                <span>${item.fba_fee ? curr + item.fba_fee.toFixed(2) : '-'}</span>
+                ${inrFba ? `<br><small style="color: var(--table-sub-text);">≈ ₹${inrFba}</small>` : ''}
             </td>
             <td>
                 <span class="badge badge-subtle-dark">${item.conv_rate ? '1 ' + curr.trim() + ' = ₹' + item.conv_rate : '1.0'}</span>
             </td>
-            <td><span class="text-white">${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</span></td>
+            <td><span>${item.freight ? '₹' + item.freight.toFixed(2) : '-'}</span></td>
             <td>
                 <span class="badge badge-subtle-dark">${item.min_selling_rate ? curr + item.min_selling_rate.toFixed(2) : '-'}</span>
-                ${inrMinSell ? `<br><small style="color: #94a3b8 !important;">≈ ₹${inrMinSell}</small>` : ''}
+                ${inrMinSell ? `<br><small style="color: var(--table-sub-text);">≈ ₹${inrMinSell}</small>` : ''}
             </td>
             <td>
-                <span class="${!isNeg ? 'text-success fw-bold' : 'text-danger fw-bold'}" style="font-size: 1rem;">
+                <span class="${!isNeg ? 'text-success fw-bold' : 'text-danger fw-bold'}">
                     ${item.margin !== null && item.margin !== undefined ? (item.margin >= 0 ? '+₹' : '-₹') + Math.abs(item.margin).toFixed(2) : '-'}
                 </span>
             </td>
@@ -1429,7 +1441,7 @@ function renderMarketplaceTable(items) {
 
 function exportMarketplaceCsv() {
     const mp = document.getElementById('marketplaceSelect').value;
-    window.location.href = `/api/export/marketplace-csv?marketplace=${mp}`;
+    window.location.href = `/api/export/marketplace-csv?marketplace=${encodeURIComponent(mp)}`;
 }
 
 function handleLogout() {
