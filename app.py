@@ -109,7 +109,7 @@ def migrate_from_excel():
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     
-    # 1. Warehouse Stock Migration (Sheet1)
+    # 1. Warehouse Stock (Sheet1)
     cursor.execute("SELECT COUNT(*) FROM products")
     if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
         sheet = wb['Sheet1']
@@ -170,7 +170,7 @@ def migrate_from_excel():
                     except:
                         pass
 
-    # 2. Marketplace Country Sheets Migration
+    # 2. Marketplace Country Sheets
     cursor.execute("SELECT COUNT(*) FROM marketplace_products")
     if cursor.fetchone()[0] == 0:
         marketplaces = [
@@ -309,14 +309,16 @@ def logout():
 
 @app.route('/api/worker-stats', methods=['GET'])
 def worker_stats():
-    username = session.get('username', '')
+    # Can query specific worker if requested by Master
+    target_user = request.args.get('username', session.get('username', ''))
     today_ist = get_current_ist_date()
     conn = get_db()
-    today_received = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'RECEIVE' AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
-    today_issued = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'ISSUE' AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
-    today_ops = conn.execute("SELECT COUNT(*) FROM activity_log WHERE username = ? AND timestamp LIKE ?", (username, f"{today_ist}%")).fetchone()[0] or 0
+    today_received = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'RECEIVE' AND timestamp LIKE ?", (target_user, f"{today_ist}%")).fetchone()[0] or 0
+    today_issued = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE username = ? AND action = 'ISSUE' AND timestamp LIKE ?", (target_user, f"{today_ist}%")).fetchone()[0] or 0
+    today_ops = conn.execute("SELECT COUNT(*) FROM activity_log WHERE username = ? AND timestamp LIKE ?", (target_user, f"{today_ist}%")).fetchone()[0] or 0
     conn.close()
     return jsonify({
+        "target_user": target_user,
         "today_received": today_received,
         "today_issued": today_issued,
         "today_ops": today_ops
@@ -327,7 +329,9 @@ def get_stats():
     conn = get_db()
     total_items = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
     total_qty = conn.execute("SELECT SUM(actual_stock) FROM products").fetchone()[0] or 0
-    low_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock <= 10").fetchone()[0]
+    low_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock > 0 AND actual_stock <= 10").fetchone()[0]
+    out_of_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock = 0").fetchone()[0]
+    in_stock = conn.execute("SELECT COUNT(*) FROM products WHERE actual_stock > 10").fetchone()[0]
     pending_tasks = conn.execute("SELECT COUNT(*) FROM products WHERE status = 'Pending'").fetchone()[0]
     total_global_skus = conn.execute("SELECT COUNT(*) FROM marketplace_products").fetchone()[0]
     
@@ -340,21 +344,47 @@ def get_stats():
         total_damage_loss += float(p['damage'] or 0) * unit_p
     
     top_stocks = conn.execute("SELECT description, actual_stock FROM products ORDER BY actual_stock DESC LIMIT 6").fetchall()
-    brand_breakdown = conn.execute("SELECT brand, COUNT(*), SUM(actual_stock) FROM products GROUP BY brand ORDER BY SUM(actual_stock) DESC LIMIT 5").fetchall()
+    
+    # Meaningful BI Breakdown:
+    # 1. Stock Health (In Stock, Low Stock, Out of Stock)
+    stock_health = [
+        {"status": "In Stock (>10)", "count": in_stock, "color": "#10b981"},
+        {"status": "Low Stock (1-10)", "count": low_stock, "color": "#f59e0b"},
+        {"status": "Out of Stock (0)", "count": out_of_stock, "color": "#ef4444"}
+    ]
+    
+    # 2. Activity Breakdown (Receives, Issues, Damage count)
+    total_receives = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE action = 'RECEIVE'").fetchone()[0] or 0
+    total_issues = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE action = 'ISSUE'").fetchone()[0] or 0
+    total_damages = conn.execute("SELECT SUM(quantity) FROM activity_log WHERE action = 'DAMAGE'").fetchone()[0] or 0
+    activity_breakdown = {
+        "receives": total_receives,
+        "issues": total_issues,
+        "damages": total_damages
+    }
+    
+    # 3. Country Margins Breakdown
     marketplace_breakdown = conn.execute("SELECT marketplace_label, COUNT(*), AVG(margin) FROM marketplace_products GROUP BY marketplace_label").fetchall()
+    
+    # 4. Registered Operators List
+    users_list = conn.execute("SELECT username, role FROM users ORDER BY id ASC").fetchall()
     
     conn.close()
     return jsonify({
         "total_items": total_items,
         "total_qty": total_qty,
         "low_stock": low_stock,
+        "out_of_stock": out_of_stock,
+        "in_stock": in_stock,
         "pending_tasks": pending_tasks,
         "total_global_skus": total_global_skus,
         "total_inventory_val": round(total_inventory_val, 2),
         "total_damage_loss": round(total_damage_loss, 2),
         "top_stocks": [dict(r) for r in top_stocks],
-        "brand_breakdown": [{"brand": r[0], "count": r[1], "qty": r[2] or 0} for r in brand_breakdown],
-        "marketplace_breakdown": [{"label": r[0], "skus": r[1], "avg_margin": round(r[2] or 0, 2)} for r in marketplace_breakdown]
+        "stock_health": stock_health,
+        "activity_breakdown": activity_breakdown,
+        "marketplace_breakdown": [{"label": r[0], "skus": r[1], "avg_margin": round(r[2] or 0, 2)} for r in marketplace_breakdown],
+        "users_list": [dict(u) for u in users_list]
     })
 
 @app.route('/api/products', methods=['GET'])
@@ -555,6 +585,7 @@ def get_marketplace_products():
 def get_ledger():
     prod_id = request.args.get('product_id')
     action_type = request.args.get('action')
+    operator = request.args.get('operator')
     conn = get_db()
     query = "SELECT * FROM activity_log"
     params = []
@@ -566,11 +597,14 @@ def get_ledger():
     if action_type and action_type != 'ALL':
         conditions.append("action = ?")
         params.append(action_type)
+    if operator and operator != 'ALL':
+        conditions.append("username = ?")
+        params.append(operator)
         
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
         
-    query += " ORDER BY id DESC LIMIT 150"
+    query += " ORDER BY id DESC LIMIT 200"
     logs = conn.execute(query, params).fetchall()
     conn.close()
     return jsonify([dict(l) for l in logs])
@@ -609,11 +643,22 @@ def export_marketplace_csv():
 @app.route('/api/export/ledger-csv')
 def export_ledger_csv():
     prod_id = request.args.get('product_id', '')
+    operator = request.args.get('operator', '')
     conn = get_db()
+    query = "SELECT * FROM activity_log"
+    params = []
+    conds = []
     if prod_id:
-        logs = conn.execute("SELECT * FROM activity_log WHERE product_id = ? ORDER BY id DESC", (prod_id,)).fetchall()
-    else:
-        logs = conn.execute("SELECT * FROM activity_log ORDER BY id DESC").fetchall()
+        conds.append("product_id = ?")
+        params.append(prod_id)
+    if operator and operator != 'ALL':
+        conds.append("username = ?")
+        params.append(operator)
+    if conds:
+        query += " WHERE " + " AND ".join(conds)
+    query += " ORDER BY id DESC"
+    
+    logs = conn.execute(query, params).fetchall()
     conn.close()
     
     def generate():
