@@ -1,30 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Warehouse & Supply Chain ERP</title>
+    <title>Enterprise Warehouse Command Hub</title>
     <!-- Bootstrap 5, Icons & Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* ---------------- THEME VARIABLES ---------------- */
         :root {
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
             --text-heading: #0f172a;
+            --text-label: #334155;
             --text-muted: #64748b;
             --nav-bg: #0f172a;
             --border-color: #e2e8f0;
             --input-bg: #ffffff;
             --input-border: #cbd5e1;
+            --input-text: #0f172a;
+            --icon-color: #2563eb;
+            --dropdown-bg: #ffffff;
+            --dropdown-text: #0f172a;
             --primary: #2563eb;
             --primary-rgb: 37, 99, 235;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
             --badge-bg: #f1f5f9;
             --table-hover: #f8fafc;
             --table-row-text: #0f172a;
@@ -36,11 +39,16 @@
             --card-bg: #0f172a;
             --text-main: #f8fafc;
             --text-heading: #ffffff;
+            --text-label: #cbd5e1;
             --text-muted: #94a3b8;
             --nav-bg: #090d16;
             --border-color: #1e293b;
             --input-bg: #131d35;
             --input-border: #2a3b5c;
+            --input-text: #f8fafc;
+            --icon-color: #60a5fa;
+            --dropdown-bg: #0f172a;
+            --dropdown-text: #f8fafc;
             --primary: #3b82f6;
             --primary-rgb: 59, 130, 246;
             --badge-bg: #1e293b;
@@ -68,29 +76,62 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08); 
         }
 
-        h1, h2, h3, h4, h5, h6, .card-title, .modal-title, .theme-heading { color: var(--text-heading) !important; }
-        .text-card-label { color: var(--text-muted) !important; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.6px; text-transform: uppercase; }
-        [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
-        .text-card-sub { color: var(--text-muted) !important; font-size: 0.82rem; }
+        /* High Contrast Labels across all tabs */
+        .theme-label { 
+            color: var(--text-label) !important; 
+            font-weight: 700 !important; 
+            font-size: 0.82rem !important; 
+            letter-spacing: 0.3px; 
+            display: block; 
+            margin-bottom: 4px; 
+        }
+        
+        h1, h2, h3, h4, h5, h6, .card-title, .modal-title, .theme-heading { 
+            color: var(--text-heading) !important; 
+        }
 
+        .text-card-label { 
+            color: var(--text-muted) !important; 
+            font-weight: 700; 
+            font-size: 0.8rem; 
+            letter-spacing: 0.6px; 
+            text-transform: uppercase; 
+        }
+        [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
+
+        /* Form Inputs & Search Groups with Highlighted Icons */
         .form-control, .form-select, .input-group-text { 
             background-color: var(--input-bg) !important; 
-            color: var(--text-main) !important; 
+            color: var(--input-text) !important; 
             border: 1px solid var(--input-border) !important; 
-            font-weight: 500;
+            font-weight: 500; 
         }
-        .form-control::placeholder { color: var(--text-muted) !important; opacity: 0.8; }
+        
+        .input-group-text i {
+            color: var(--icon-color) !important;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .form-control::placeholder { 
+            color: var(--text-muted) !important; 
+            opacity: 0.75; 
+        }
+
         .form-control:focus, .form-select:focus {
             background-color: var(--input-bg) !important;
-            color: var(--text-main) !important;
+            color: var(--input-text) !important;
             border-color: var(--primary) !important;
             box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25) !important;
         }
-        .form-select option {
-            background-color: var(--card-bg) !important;
-            color: var(--text-main) !important;
+
+        /* Scoped Dropdown Colors */
+        select option {
+            background-color: var(--dropdown-bg) !important;
+            color: var(--dropdown-text) !important;
         }
 
+        /* Nav Pills Navigation */
         .nav-pills .nav-link { 
             color: var(--text-muted) !important; 
             font-weight: 600; 
@@ -102,10 +143,11 @@
         .nav-pills .nav-link:hover { color: var(--text-main) !important; background-color: var(--badge-bg); }
         .nav-pills .nav-link.active { background-color: var(--primary) !important; color: #ffffff !important; font-weight: 700; }
 
+        /* Tables & Typography */
         .table { 
             color: var(--table-row-text) !important; 
             --bs-table-bg: transparent !important; 
-            margin-bottom: 0;
+            margin-bottom: 0; 
         }
         .table th { 
             font-size: 0.78rem; 
@@ -118,12 +160,13 @@
         .table td { 
             color: var(--table-row-text) !important; 
             border-bottom: 1px solid var(--border-color) !important; 
-            vertical-align: middle;
+            vertical-align: middle; 
         }
         .table-hover tbody tr:hover { background-color: var(--table-hover) !important; }
         .table strong { color: var(--text-heading) !important; font-weight: 600; }
         .table small { color: var(--table-sub-text) !important; }
 
+        /* Badges & Chips */
         .badge-subtle-primary { background-color: rgba(59, 130, 246, 0.18) !important; color: #60a5fa !important; border: 1px solid rgba(59, 130, 246, 0.3); }
         .badge-subtle-success { background-color: rgba(16, 185, 129, 0.18) !important; color: #34d399 !important; border: 1px solid rgba(16, 185, 129, 0.3); }
         .badge-subtle-danger { background-color: rgba(239, 68, 68, 0.18) !important; color: #f87171 !important; border: 1px solid rgba(239, 68, 68, 0.3); }
@@ -159,7 +202,7 @@
 <div class="toast-container">
     <div id="actionToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert">
         <div class="d-flex">
-            <div class="toast-body fw-semibold" id="toastMessage">Operation successful</div>
+            <div class="toast-body fw-semibold" id="toastMessage">Operation completed successfully</div>
             <button id="toastUndoBtn" class="btn btn-sm btn-warning me-2 my-auto px-2 py-0 fw-bold d-none" onclick="triggerUndo()">UNDO</button>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
@@ -176,16 +219,16 @@
                         <i class="bi bi-shield-lock-fill fs-1"></i>
                     </span>
                 </div>
-                <h4 class="fw-bold mb-1">Sign In</h4>
-                <p class="text-muted small mb-4">Warehouse Portal</p>
+                <h4 class="fw-bold mb-1">Warehouse Command Center</h4>
+                <p class="text-muted small mb-4">Enterprise Inventory Hub</p>
                 
                 <div class="mb-3 text-start">
-                    <label class="form-label small fw-bold">Username</label>
+                    <label class="form-label small fw-bold theme-label">Username</label>
                     <input type="text" id="username" class="form-control" placeholder="Username">
                 </div>
                 
                 <div class="mb-3 text-start">
-                    <label class="form-label small fw-bold">Password</label>
+                    <label class="form-label small fw-bold theme-label">Password</label>
                     <input type="password" id="password" class="form-control" placeholder="Password">
                 </div>
 
@@ -193,7 +236,7 @@
                     <a href="javascript:void(0)" class="text-primary text-decoration-none small fw-semibold" onclick="openForgotModal()">Forgot Password?</a>
                 </div>
 
-                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Sign In</button>
+                <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handleLogin()">Authorize & Access ERP</button>
             </div>
         </div>
     </div>
@@ -331,13 +374,13 @@
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-md-5">
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
                                 <input type="text" id="invSearch" class="form-control border-start-0 border-end-0" placeholder="Search SKU, Description, HSN (Press '/' to search)..." oninput="filterInventory()">
                                 <button class="btn btn-outline-secondary border-start-0" onclick="clearSearch()"><i class="bi bi-x-circle"></i></button>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <input list="brandOptions" id="invBrandFilter" class="form-control" placeholder="Filter by Brand (Type or select)" oninput="filterInventory()">
+                            <input list="brandOptions" id="invBrandFilter" class="form-control" placeholder="Filter Brand (Type / Select)" oninput="filterInventory()">
                             <datalist id="brandOptions"></datalist>
                         </div>
                         <div class="col-md-4 text-end d-flex justify-content-end gap-2">
@@ -402,9 +445,9 @@
                 <div class="card p-3 mb-3 no-print">
                     <div class="row g-2 align-items-center justify-content-between">
                         <div class="col-md-7">
-                            <label class="form-label small fw-bold text-muted mb-1">Search & Filter Timeline By Specific Product</label>
+                            <label class="theme-label">Search & Filter Timeline By Specific Product</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
                                 <input list="ledgerProductOptions" id="ledgerSearchInput" class="form-control fw-semibold" placeholder="Type product name or ID to filter ledger..." oninput="handleLedgerSearchInput(this.value)">
                                 <button class="btn btn-outline-secondary" onclick="clearLedgerSearch()"><i class="bi bi-x-lg"></i> Reset</button>
                             </div>
@@ -481,26 +524,26 @@
                 <div class="card p-3 mb-3 no-print">
                     <div class="row g-3 align-items-center">
                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted mb-1">Select Country / Marketplace</label>
+                            <label class="theme-label">Select Country / Marketplace</label>
                             <select id="marketplaceSelect" class="form-select fw-bold text-primary" onchange="loadMarketplaceData()">
-                                <option value="GTUS">🇺🇸 USA (GTUS)</option>
-                                <option value="CANADA">🇨🇦 Canada</option>
-                                <option value="GTAU">🇦🇺 Australia (GTAU)</option>
-                                <option value="UAE">🇦🇪 UAE (Dubai)</option>
-                                <option value="INDIA">🇮🇳 India (Domestic)</option>
-                                <option value="VAIS NEW">🇺🇸 USA (VAIS)</option>
-                                <option value="RTAU">🇦🇺 Australia (RTAU)</option>
+                                <option value="GTUS">[USA] GTUS (USD)</option>
+                                <option value="CANADA">[Canada] CAD (CA$)</option>
+                                <option value="GTAU">[Australia] GTAU (A$)</option>
+                                <option value="UAE">[UAE] Dubai (AED)</option>
+                                <option value="INDIA">[India] Domestic (INR ₹)</option>
+                                <option value="VAIS NEW">[USA] VAIS (USD)</option>
+                                <option value="RTAU">[Australia] RTAU (A$)</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted mb-1">Search SKU / ASIN</label>
+                            <label class="theme-label">Search SKU / ASIN</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
                                 <input type="text" id="marketSearchInput" class="form-control" placeholder="Search SKU or ASIN..." oninput="filterMarketplaceItems()">
                             </div>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted mb-1">Margin Filter</label>
+                            <label class="theme-label">Margin Filter</label>
                             <select id="marginFilterSelect" class="form-select" onchange="filterMarketplaceItems()">
                                 <option value="ALL">All Products</option>
                                 <option value="LOSS">Negative Margin (Loss) ⚠️</option>
@@ -554,14 +597,14 @@
                     <h4 class="fw-bold mb-0 text-primary" id="stockModalCurrent">0</h4>
                 </div>
 
-                <label class="form-label small fw-bold">Select Operation</label>
+                <label class="form-label small fw-bold theme-label">Select Operation</label>
                 <div class="d-flex gap-2 mb-3">
                     <button type="button" class="btn btn-outline-success flex-fill fw-bold active" id="btnActionReceive" onclick="setActionType('RECEIVE')"><i class="bi bi-box-arrow-in-down"></i> RECEIVE (+)</button>
                     <button type="button" class="btn btn-outline-danger flex-fill fw-bold" id="btnActionIssue" onclick="setActionType('ISSUE')"><i class="bi bi-box-arrow-up"></i> ISSUE (-)</button>
                     <button type="button" class="btn btn-outline-warning flex-fill fw-bold" id="btnActionDamage" onclick="setActionType('DAMAGE')"><i class="bi bi-exclamation-octagon"></i> DAMAGE</button>
                 </div>
 
-                <label class="form-label small fw-bold">Quantity</label>
+                <label class="form-label small fw-bold theme-label">Quantity</label>
                 <div class="input-group mb-2">
                     <input type="number" id="modalQtyInput" class="form-control form-control-lg text-center fw-bold" value="1" min="1">
                 </div>
@@ -575,7 +618,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label small fw-bold">Remarks (Optional)</label>
+                    <label class="form-label small fw-bold theme-label">Remarks (Optional)</label>
                     <input type="text" id="modalRemarksInput" class="form-control" placeholder="Invoice reference / note">
                 </div>
 
@@ -595,36 +638,36 @@
             </div>
             <div class="modal-body">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">Description *</label>
+                    <label class="form-label small fw-bold theme-label">Description *</label>
                     <input type="text" id="newDesc" class="form-control" placeholder="Product Title">
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Brand</label>
+                        <label class="form-label small fw-bold theme-label">Brand</label>
                         <input type="text" id="newBrand" class="form-control" placeholder="Brand Name">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Country</label>
+                        <label class="form-label small fw-bold theme-label">Country</label>
                         <input type="text" id="newCountry" class="form-control" value="INDIA">
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">HSN Code</label>
+                        <label class="form-label small fw-bold theme-label">HSN Code</label>
                         <input type="text" id="newHsn" class="form-control" placeholder="HSN Code">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Initial Stock</label>
+                        <label class="form-label small fw-bold theme-label">Initial Stock</label>
                         <input type="number" id="newOpening" class="form-control" value="0">
                     </div>
                 </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Purchase Price (₹)</label>
+                        <label class="form-label small fw-bold theme-label">Purchase Price (₹)</label>
                         <input type="number" step="0.01" id="newPrice" class="form-control" placeholder="0.00">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <label class="form-label small fw-bold theme-label">MRP (₹)</label>
                         <input type="number" step="0.01" id="newMrp" class="form-control" placeholder="0.00">
                     </div>
                 </div>
@@ -645,36 +688,36 @@
             <div class="modal-body">
                 <input type="hidden" id="editProdId">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold">Description *</label>
+                    <label class="form-label small fw-bold theme-label">Description *</label>
                     <input type="text" id="editDesc" class="form-control">
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Brand</label>
+                        <label class="form-label small fw-bold theme-label">Brand</label>
                         <input type="text" id="editBrand" class="form-control">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Country</label>
+                        <label class="form-label small fw-bold theme-label">Country</label>
                         <input type="text" id="editCountry" class="form-control">
                     </div>
                 </div>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">HSN Code</label>
+                        <label class="form-label small fw-bold theme-label">HSN Code</label>
                         <input type="text" id="editHsn" class="form-control">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Expiry Date</label>
+                        <label class="form-label small fw-bold theme-label">Expiry Date</label>
                         <input type="text" id="editExpiry" class="form-control">
                     </div>
                 </div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label small fw-bold">Price (₹)</label>
+                        <label class="form-label small fw-bold theme-label">Price (₹)</label>
                         <input type="number" step="0.01" id="editPrice" class="form-control">
                     </div>
                     <div class="col-6">
-                        <label class="form-label small fw-bold">MRP (₹)</label>
+                        <label class="form-label small fw-bold theme-label">MRP (₹)</label>
                         <input type="number" step="0.01" id="editMrp" class="form-control">
                     </div>
                 </div>
@@ -707,15 +750,15 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3 text-start">
-                    <label class="form-label small fw-bold">Username</label>
+                    <label class="form-label small fw-bold theme-label">Username</label>
                     <input type="text" id="resetUsername" class="form-control" placeholder="Username">
                 </div>
                 <div class="mb-3 text-start">
-                    <label class="form-label small fw-bold">Master PIN</label>
+                    <label class="form-label small fw-bold theme-label">Master PIN</label>
                     <input type="password" id="resetPin" class="form-control" placeholder="PIN">
                 </div>
                 <div class="mb-4 text-start">
-                    <label class="form-label small fw-bold">New Password</label>
+                    <label class="form-label small fw-bold theme-label">New Password</label>
                     <input type="password" id="resetNewPassword" class="form-control" placeholder="New Password">
                 </div>
                 <button class="btn btn-primary w-100 py-2 fw-semibold" onclick="handlePasswordReset()">Reset</button>
@@ -740,7 +783,7 @@ let mpChartInstance = null;
 let stockModalObj, detailModalObj, forgotModalObj, addProdModalObj, editProdModalObj, toastObj;
 
 (function initTheme() {
-    const saved = localStorage.getItem('erp-theme') || 'light';
+    const saved = localStorage.getItem('erp-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 })();
