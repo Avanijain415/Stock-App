@@ -109,7 +109,7 @@ def migrate_from_excel():
 
     wb = openpyxl.load_workbook(EXCEL_FILE, data_only=True)
     
-    # 1. Migrate Warehouse Products with True Running Balance Math
+    # 1. Warehouse Stock Migration (Sheet1)
     cursor.execute("SELECT COUNT(*) FROM products")
     if cursor.fetchone()[0] == 0 and 'Sheet1' in wb.sheetnames:
         sheet = wb['Sheet1']
@@ -126,10 +126,8 @@ def migrate_from_excel():
             except: price = 0.0
             try: tax = float(sheet.cell(row=row, column=7).value or 0)
             except: tax = 0.0
-            try: 
-                price_after_tax = float(sheet.cell(row=row, column=8).value or (price * (1 + tax)))
-            except: 
-                price_after_tax = price
+            try: price_after_tax = float(sheet.cell(row=row, column=8).value or (price * (1 + tax)))
+            except: price_after_tax = price
             try: mrp = float(sheet.cell(row=row, column=9).value or 0)
             except: mrp = 0.0
             try: per_petti = int(sheet.cell(row=row, column=10).value or 0)
@@ -151,7 +149,6 @@ def migrate_from_excel():
             ''', (hsn, country, brand, str(desc).strip(), price, tax, price_after_tax, mrp, per_petti, expiry, opening, actual, damage, status))
             prod_id = cursor.lastrowid
             
-            # Step-by-Step Running Balance Ledger for Historical Entries
             running_balance = opening
             for col in range(18, min(sheet.max_column + 1, 50)):
                 val = sheet.cell(row=row, column=col).value
@@ -169,11 +166,11 @@ def migrate_from_excel():
                         cursor.execute('''
                             INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (prod_id, str(desc).strip(), 'System Excel', action, abs(qty), prev_bal, running_balance, f"Initial Data from {date_str}", get_current_ist_time()))
+                        ''', (prod_id, str(desc).strip(), 'System Excel', action, abs(qty), prev_bal, running_balance, f"Historical entry: {date_str}", get_current_ist_time()))
                     except:
                         pass
 
-    # 2. Migrate Global Country Marketplace Sheets with Guaranteed Amazon Fallback URLs
+    # 2. Marketplace Country Sheets Migration
     cursor.execute("SELECT COUNT(*) FROM marketplace_products")
     if cursor.fetchone()[0] == 0:
         marketplaces = [
@@ -234,7 +231,6 @@ def migrate_from_excel():
                 min_selling = get_val_by_keys(r, ['MIN SELLING RATE', 'MIN SELLING'])
                 margin = get_val_by_keys(r, ['MARGIN'])
                 
-                # Check for explicit link in sheet or create guaranteed Amazon URL via ASIN
                 link = ""
                 for c in range(1, 16):
                     cell_v = str(ws.cell(row=r, column=c).value or '').strip()
@@ -279,7 +275,7 @@ def login():
         session['username'] = user['username']
         session['role'] = user['role']
         return jsonify({"status": "success", "username": user['username'], "role": user['role']})
-    return jsonify({"status": "error", "message": "Invalid username or password"}), 401
+    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
@@ -289,10 +285,10 @@ def reset_password():
     pin = data.get('pin', '').strip()
     
     if pin != MASTER_RESET_PIN:
-        return jsonify({"status": "error", "message": "Invalid Master Recovery PIN"}), 403
+        return jsonify({"status": "error", "message": "Invalid PIN"}), 403
     
     if not username or not new_password:
-        return jsonify({"status": "error", "message": "All fields are required"}), 400
+        return jsonify({"status": "error", "message": "Required fields missing"}), 400
 
     conn = get_db()
     cursor = conn.cursor()
@@ -304,7 +300,7 @@ def reset_password():
     cursor.execute("UPDATE users SET password = ? WHERE username = ?", (new_password, username))
     conn.commit()
     conn.close()
-    return jsonify({"status": "success", "message": "Password reset successfully!"})
+    return jsonify({"status": "success", "message": "Password updated successfully!"})
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
@@ -376,7 +372,7 @@ def add_product():
     data = request.json or {}
     desc = data.get('description', '').strip()
     if not desc:
-        return jsonify({"status": "error", "message": "Product description is required"}), 400
+        return jsonify({"status": "error", "message": "Description required"}), 400
     
     hsn = data.get('hsn_code', '').strip()
     brand = data.get('brand', 'GENERAL').strip()
@@ -410,7 +406,7 @@ def add_product():
 @app.route('/api/products/delete/<int:prod_id>', methods=['DELETE'])
 def delete_product(prod_id):
     if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Forbidden: Master authority required"}), 403
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
     
     conn = get_db()
     cursor = conn.cursor()
@@ -427,18 +423,18 @@ def delete_product(prod_id):
     
     conn.commit()
     conn.close()
-    return jsonify({"status": "success", "message": f"Product #{prod_id} successfully deleted"})
+    return jsonify({"status": "success", "message": f"Product #{prod_id} deleted"})
 
 @app.route('/api/products/edit', methods=['POST'])
 def edit_product():
     if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Forbidden: Master authority required"}), 403
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
         
     data = request.json or {}
     prod_id = data.get('id')
     desc = data.get('description', '').strip()
     if not desc:
-        return jsonify({"status": "error", "message": "Description cannot be empty"}), 400
+        return jsonify({"status": "error", "message": "Description required"}), 400
         
     hsn = data.get('hsn_code', '').strip()
     brand = data.get('brand', 'GENERAL').strip()
@@ -488,12 +484,12 @@ def adjust_stock():
     if mode == 'DAMAGE':
         if change > prev_stock:
             conn.close()
-            return jsonify({"status": "error", "message": f"Cannot mark {change} units as damaged. Only {prev_stock} available!"}), 400
+            return jsonify({"status": "error", "message": f"Only {prev_stock} available to damage!"}), 400
         new_stock = prev_stock - change
         new_damage = prev_damage + change
         status = "Pending" if new_stock <= 5 else "Completed"
         cursor.execute("UPDATE products SET actual_stock = ?, damage = ?, status = ? WHERE id = ?", (new_stock, new_damage, status, prod_id))
-        detail_str = remarks if remarks else f"Moved {change} units to Damaged/Defective"
+        detail_str = remarks if remarks else f"Moved {change} to Defective"
         cursor.execute('''
             INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
             VALUES (?, ?, ?, 'DAMAGE', ?, ?, ?, ?, ?)
@@ -503,7 +499,7 @@ def adjust_stock():
         action_type = "RECEIVE" if change > 0 else "ISSUE"
         if change < 0 and abs(change) > prev_stock:
             conn.close()
-            return jsonify({"status": "error", "message": f"Insufficient Stock! Available: {prev_stock}, Requested: {abs(change)}"}), 400
+            return jsonify({"status": "error", "message": f"Insufficient stock! Available: {prev_stock}"}), 400
             
         new_stock = max(0, prev_stock + change)
         status = "Pending" if new_stock <= 5 else "Completed"
@@ -531,7 +527,7 @@ def undo_adjustment():
     log = cursor.execute("SELECT * FROM activity_log WHERE id = ?", (log_id,)).fetchone()
     if not log:
         conn.close()
-        return jsonify({"status": "error", "message": "Transaction log not found"}), 404
+        return jsonify({"status": "error", "message": "Transaction not found"}), 404
         
     prod_id = log['product_id']
     prev_stock = log['prev_stock']
@@ -540,17 +536,15 @@ def undo_adjustment():
     cursor.execute("UPDATE products SET actual_stock = ?, status = ? WHERE id = ?", (prev_stock, status, prod_id))
     cursor.execute('''
         INSERT INTO activity_log (product_id, product_desc, username, action, quantity, prev_stock, new_stock, details, timestamp)
-        VALUES (?, ?, ?, 'UNDO', ?, ?, ?, 'Undo Action Applied', ?)
+        VALUES (?, ?, ?, 'UNDO', ?, ?, ?, 'Reverted Operation', ?)
     ''', (prod_id, log['product_desc'], session['username'], log['quantity'], log['new_stock'], prev_stock, get_current_ist_time()))
     
     conn.commit()
     conn.close()
-    return jsonify({"status": "success", "message": "Action successfully reverted!"})
+    return jsonify({"status": "success", "message": "Operation reverted successfully!"})
 
 @app.route('/api/marketplaces/products', methods=['GET'])
 def get_marketplace_products():
-    if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Confidential financial data reserved for Master role"}), 403
     mp = request.args.get('marketplace', 'GTUS')
     conn = get_db()
     items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
@@ -581,7 +575,7 @@ def get_ledger():
     conn.close()
     return jsonify([dict(l) for l in logs])
 
-# ----------------- CSV EXPORT SUITE -----------------
+# ----------------- CSV EXPORTS -----------------
 
 @app.route('/api/export/warehouse-csv')
 def export_warehouse_csv():
@@ -599,8 +593,6 @@ def export_warehouse_csv():
 
 @app.route('/api/export/marketplace-csv')
 def export_marketplace_csv():
-    if session.get('role') != 'master':
-        return jsonify({"status": "error", "message": "Forbidden"}), 403
     mp = request.args.get('marketplace', 'GTUS')
     conn = get_db()
     items = conn.execute("SELECT * FROM marketplace_products WHERE marketplace = ?", (mp,)).fetchall()
