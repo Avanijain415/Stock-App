@@ -10,9 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ---------------- DUAL THEME ENGINE WITH NATIVE COLOR-SCHEME ---------------- */
+        /* ---------------- DUAL THEME ENGINE ---------------- */
         :root {
-            color-scheme: light;
             --bg-body: #f8fafc;
             --card-bg: #ffffff;
             --text-main: #0f172a;
@@ -27,6 +26,8 @@
             --icon-color: #2563eb;
             --dropdown-bg: #ffffff;
             --dropdown-text: #0f172a;
+            --dropdown-hover: #f1f5f9;
+            --dropdown-border: #cbd5e1;
             --primary: #2563eb;
             --primary-rgb: 37, 99, 235;
             --badge-bg: #f1f5f9;
@@ -36,7 +37,6 @@
         }
 
         [data-theme="dark"] {
-            color-scheme: dark;
             --bg-body: #070b14;
             --card-bg: #0f172a;
             --text-main: #f8fafc;
@@ -49,8 +49,10 @@
             --input-border: #2a3b5c;
             --input-text: #f8fafc;
             --icon-color: #60a5fa;
-            --dropdown-bg: #0f172a;
+            --dropdown-bg: #131d35;
             --dropdown-text: #f8fafc;
+            --dropdown-hover: #1e293b;
+            --dropdown-border: #2a3b5c;
             --primary: #3b82f6;
             --primary-rgb: 59, 130, 246;
             --badge-bg: #1e293b;
@@ -101,7 +103,7 @@
         }
         [data-theme="dark"] .text-card-label { color: #cbd5e1 !important; }
 
-        /* Form Inputs & Autocomplete Datalist Box */
+        /* Form Inputs */
         .form-control, .form-select, .input-group-text { 
             background-color: var(--input-bg) !important; 
             color: var(--input-text) !important; 
@@ -127,10 +129,37 @@
             box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25) !important;
         }
 
-        /* Scoped Dropdown Colors */
-        select option {
+        /* CUSTOM FILTERABLE POPUP DROPDOWN (Zero OS Dark Mode Glitch) */
+        .custom-search-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1050;
             background-color: var(--dropdown-bg) !important;
+            border: 1px solid var(--dropdown-border) !important;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 280px;
+            overflow-y: auto;
+            display: none;
+            margin-top: 4px;
+        }
+        .custom-search-dropdown-item {
+            padding: 9px 14px;
+            cursor: pointer;
             color: var(--dropdown-text) !important;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: background 0.15s ease;
+        }
+        .custom-search-dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .custom-search-dropdown-item:hover {
+            background-color: var(--dropdown-hover) !important;
+            color: var(--primary) !important;
         }
 
         /* Nav Pills Navigation */
@@ -381,9 +410,12 @@
                                 <button class="btn btn-outline-secondary border-start-0" onclick="clearSearch()"><i class="bi bi-x-circle"></i></button>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <input list="brandOptions" id="invBrandFilter" class="form-control" placeholder="Filter Brand (Type / Select)" oninput="filterInventory()">
-                            <datalist id="brandOptions"></datalist>
+                        <div class="col-md-3 position-relative">
+                            <div class="input-group">
+                                <input type="text" id="invBrandFilterInput" class="form-control" placeholder="Filter Brand (Type / Select)" oninput="filterBrandDropdown(this.value)" onfocus="openBrandDropdown()" onclick="openBrandDropdown()">
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleBrandDropdown()"><i class="bi bi-chevron-down small"></i></button>
+                            </div>
+                            <div id="brandCustomDropdown" class="custom-search-dropdown-menu"></div>
                         </div>
                         <div class="col-md-4 text-end d-flex justify-content-end gap-2">
                             <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i> Print Sheet</button>
@@ -458,14 +490,14 @@
             <div class="tab-pane fade" id="ledgerTab">
                 <div class="card p-3 mb-3 no-print">
                     <div class="row g-2 align-items-center justify-content-between">
-                        <div class="col-md-7">
+                        <div class="col-md-7 position-relative">
                             <label class="theme-label">Search & Filter Timeline By Specific Product</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input list="ledgerProductOptions" id="ledgerSearchInput" class="form-control fw-semibold" placeholder="Type product name or ID to filter ledger..." oninput="handleLedgerSearchInput(this.value)">
+                                <input type="text" id="ledgerSearchInput" class="form-control fw-semibold" placeholder="Type product name or ID to filter ledger..." oninput="filterLedgerDropdown(this.value)" onfocus="openLedgerDropdown()">
                                 <button class="btn btn-outline-secondary" onclick="clearLedgerSearch()"><i class="bi bi-x-lg"></i> Reset</button>
                             </div>
-                            <datalist id="ledgerProductOptions"></datalist>
+                            <div id="ledgerCustomDropdown" class="custom-search-dropdown-menu"></div>
                         </div>
                         <div class="col-md-4 text-end pt-3">
                             <button class="btn btn-outline-success btn-sm" onclick="exportLedgerCsv()"><i class="bi bi-download me-1"></i> Export Audit Ledger CSV</button>
@@ -820,6 +852,7 @@
 let currentUser = null;
 let allProducts = [];
 let rawMarketplaceItems = [];
+let allBrandList = [];
 let activeStatusFilter = 'ALL';
 let activeAdjustmentProdId = null;
 let activeActionType = 'RECEIVE';
@@ -869,6 +902,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.key === '/' && document.activeElement.tagName !== 'INPUT') {
             e.preventDefault();
             document.getElementById('invSearch').focus();
+        }
+    });
+
+    // Close custom dropdowns on click outside
+    document.addEventListener('click', (e) => {
+        const brandDropdown = document.getElementById('brandCustomDropdown');
+        const brandInput = document.getElementById('invBrandFilterInput');
+        if (brandDropdown && !brandDropdown.contains(e.target) && e.target !== brandInput) {
+            brandDropdown.style.display = 'none';
+        }
+
+        const ledgerDropdown = document.getElementById('ledgerCustomDropdown');
+        const ledgerInput = document.getElementById('ledgerSearchInput');
+        if (ledgerDropdown && !ledgerDropdown.contains(e.target) && e.target !== ledgerInput) {
+            ledgerDropdown.style.display = 'none';
         }
     });
 });
@@ -1103,7 +1151,6 @@ async function loadDashboard() {
         `;
     }).join('');
 
-    // Populate Worker Dropdown in Monitor
     const workerSelect = document.getElementById('workerMonitorSelect');
     if(workerSelect && stats.users_list) {
         workerSelect.innerHTML = '<option value="ALL">-- All Operators & System Logs --</option>' + 
@@ -1270,20 +1317,102 @@ async function loadProducts() {
     document.getElementById('countOutStock').innerText = allProducts.filter(p => p.actual_stock === 0).length;
     document.getElementById('countPending').innerText = allProducts.filter(p => p.status === 'Pending').length;
 
-    // Populate Brand Datalist
-    const brandDataList = document.getElementById('brandOptions');
+    // Build Custom Searchable Brand List
     const brandMap = {};
     allProducts.forEach(p => {
-        const b = p.brand || 'GENERAL';
+        const b = (p.brand || 'GENERAL').trim().toUpperCase();
         brandMap[b] = (brandMap[b] || 0) + 1;
     });
-    brandDataList.innerHTML = Object.keys(brandMap).sort().map(b => `<option value="${b}">${b} (${brandMap[b]} items)</option>`).join('');
+    allBrandList = Object.keys(brandMap).sort().map(b => ({ brand: b, count: brandMap[b] }));
+    renderBrandDropdown(allBrandList);
 
-    // Populate Searchable Ledger Options
-    const ledgerOptions = document.getElementById('ledgerProductOptions');
-    ledgerOptions.innerHTML = allProducts.map(p => `<option value="#${p.id} - ${p.description}">ID: ${p.id} | Stock: ${p.actual_stock}</option>`).join('');
+    // Initial Ledger Dropdown List
+    renderLedgerDropdown(allProducts.slice(0, 30));
 
     filterInventory();
+}
+
+/* CUSTOM FILTERABLE BRAND DROPDOWN LOGIC */
+function openBrandDropdown() {
+    const dropdown = document.getElementById('brandCustomDropdown');
+    renderBrandDropdown(allBrandList);
+    dropdown.style.display = 'block';
+}
+
+function toggleBrandDropdown() {
+    const dropdown = document.getElementById('brandCustomDropdown');
+    dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+}
+
+function filterBrandDropdown(val) {
+    const q = (val || '').toLowerCase().trim();
+    const filtered = allBrandList.filter(b => b.brand.toLowerCase().includes(q));
+    renderBrandDropdown(filtered);
+    document.getElementById('brandCustomDropdown').style.display = 'block';
+    filterInventory();
+}
+
+function renderBrandDropdown(list) {
+    const dropdown = document.getElementById('brandCustomDropdown');
+    if(list.length === 0) {
+        dropdown.innerHTML = '<div class="custom-search-dropdown-item text-muted">No matching brands found</div>';
+        return;
+    }
+    dropdown.innerHTML = `
+        <div class="custom-search-dropdown-item fw-bold text-primary" onclick="selectBrand('')">
+            <i class="bi bi-grid me-1"></i> All Brands (Show All Products)
+        </div>
+    ` + list.map(b => `
+        <div class="custom-search-dropdown-item" onclick="selectBrand('${b.brand.replace(/'/g, "\\'")}')">
+            <strong>${b.brand}</strong> <span class="small opacity-75">(${b.count} items)</span>
+        </div>
+    `).join('');
+}
+
+function selectBrand(brand) {
+    document.getElementById('invBrandFilterInput').value = brand;
+    document.getElementById('brandCustomDropdown').style.display = 'none';
+    filterInventory();
+}
+
+/* CUSTOM FILTERABLE LEDGER PRODUCT DROPDOWN */
+function openLedgerDropdown() {
+    const val = document.getElementById('ledgerSearchInput').value.toLowerCase().trim();
+    filterLedgerDropdown(val);
+    document.getElementById('ledgerCustomDropdown').style.display = 'block';
+}
+
+function filterLedgerDropdown(val) {
+    const q = (val || '').toLowerCase().trim();
+    const filtered = allProducts.filter(p => p.description.toLowerCase().includes(q) || String(p.id).includes(q)).slice(0, 35);
+    renderLedgerDropdown(filtered);
+    document.getElementById('ledgerCustomDropdown').style.display = 'block';
+    handleLedgerSearchInput(val);
+}
+
+function renderLedgerDropdown(list) {
+    const dropdown = document.getElementById('ledgerCustomDropdown');
+    if(list.length === 0) {
+        dropdown.innerHTML = '<div class="custom-search-dropdown-item text-muted">No products found</div>';
+        return;
+    }
+    dropdown.innerHTML = `
+        <div class="custom-search-dropdown-item fw-bold text-primary" onclick="selectLedgerProduct('', 'All Products')">
+            <i class="bi bi-journal-text me-1"></i> View All Recent Transactions
+        </div>
+    ` + list.map(p => `
+        <div class="custom-search-dropdown-item" onclick="selectLedgerProduct(${p.id}, '${p.description.replace(/'/g, "\\'")}')">
+            <strong>#${p.id} - ${p.description}</strong>
+            <span class="small d-block opacity-75">Stock Balance: ${p.actual_stock} units</span>
+        </div>
+    `).join('');
+}
+
+function selectLedgerProduct(id, desc) {
+    document.getElementById('ledgerSearchInput').value = id ? `#${id} - ${desc}` : '';
+    document.getElementById('ledgerCustomDropdown').style.display = 'none';
+    selectedLedgerProdId = id;
+    loadLedger(id);
 }
 
 function handleLedgerSearchInput(val) {
@@ -1296,12 +1425,6 @@ function handleLedgerSearchInput(val) {
     if(match) {
         selectedLedgerProdId = match[1];
         loadLedger(selectedLedgerProdId);
-    } else {
-        const found = allProducts.find(p => p.description.toLowerCase().includes(val.toLowerCase()));
-        if(found) {
-            selectedLedgerProdId = found.id;
-            loadLedger(found.id);
-        }
     }
 }
 
@@ -1382,13 +1505,13 @@ function setStatusFilter(filter, btn) {
 
 function clearSearch() {
     document.getElementById('invSearch').value = '';
-    document.getElementById('invBrandFilter').value = '';
+    document.getElementById('invBrandFilterInput').value = '';
     filterInventory();
 }
 
 function filterInventory() {
     const q = (document.getElementById('invSearch').value || '').toLowerCase().trim();
-    const brand = (document.getElementById('invBrandFilter').value || '').toLowerCase().trim();
+    const brand = (document.getElementById('invBrandFilterInput').value || '').toLowerCase().trim();
     
     const filtered = allProducts.filter(p => {
         const matchesQuery = p.description.toLowerCase().includes(q) || (p.hsn_code && p.hsn_code.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q));
